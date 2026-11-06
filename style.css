@@ -171,3 +171,40 @@ html,body{height:100%;overflow:hidden}
   .site-map-preview{display:none}
   .expand-tab{left:12px;bottom:12px}
 }
+
+
+/* Stage 2.8: one native touch scroller for the entire landscape sidebar.
+   Previous stages nested scroll containers and constrained #detail to height:0.
+   Avoid that arrangement on short/wide mobile screens. */
+@media (orientation:landscape) and (max-height:650px) and (pointer:coarse){
+  #workspace{height:100vh;height:100dvh;overflow:hidden;align-items:stretch}
+  #sidebar{
+    position:relative!important;inset:auto!important;transform:none!important;
+    display:block!important;
+    flex:0 0 min(390px,46vw)!important;
+    width:min(390px,46vw)!important;max-width:46vw!important;
+    height:100vh!important;height:100dvh!important;
+    min-height:0!important;max-height:100dvh!important;
+    overflow-y:auto!important;overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
+    touch-action:pan-y;
+    scrollbar-width:thin;
+  }
+  #workspace.sidebar-collapsed #sidebar{
+    flex-basis:0!important;width:0!important;overflow:hidden!important;
+  }
+  #workspace:not(.sidebar-collapsed) #map{visibility:visible!important}
+  #sidebar .app-header,#sidebar .search,#sidebar #detail,#sidebar .sidebar-footer{
+    flex:none!important;height:auto!important;min-height:0!important;
+    max-height:none!important;overflow:visible!important;
+    min-width:0!important;
+  }
+  #sidebar .app-header{padding:7px 12px;min-height:0}
+  #sidebar .brand-logo{max-height:43px;width:auto;max-width:100%}
+  #sidebar .search{padding:7px 12px}
+  #sidebar #results{max-height:110px;overflow-y:auto;overscroll-behavior:auto}
+  #sidebar #detail{display:block!important;padding:10px 12px 24px;touch-action:auto!important}
+  #sidebar .sidebar-footer{padding:7px 12px}
+  .site-map-preview{display:none!important}
+}
