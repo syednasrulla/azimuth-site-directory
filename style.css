@@ -208,3 +208,88 @@ html,body{height:100%;overflow:hidden}
   #sidebar .sidebar-footer{padding:7px 12px}
   .site-map-preview{display:none!important}
 }
+
+/* Stage 2.9: default landscape = one continuous sidebar scroller.
+   Optional pinning is explicitly enabled by the technician. */
+@media (orientation:landscape) and (max-height:650px) and (pointer:coarse){
+  #sidebar .search,#sidebar #detail,#sidebar .site-head{
+    position:static!important;top:auto!important;
+  }
+  #sidebar #detail{overflow:visible!important;height:auto!important;max-height:none!important;flex:none!important}
+  #sidebar .search{overflow:visible!important;height:auto!important;max-height:none!important;flex:none!important}
+  #sidebar #results{max-height:110px;overflow-y:auto!important}
+  #sidebar .app-header{position:static!important}
+  #sidebar.is-pinned .search{
+    position:sticky!important;top:0!important;z-index:20;
+    background:#fff;box-shadow:0 3px 10px #10233a1a;
+    max-height:43dvh!important;overflow-y:auto!important;
+    overscroll-behavior:contain;
+  }
+  #sidebar.is-pinned #detail>.site-head{
+    position:sticky!important;top:var(--pin-search-height,0px)!important;
+    z-index:19;max-height:35dvh!important;overflow-y:auto!important;
+    overscroll-behavior:contain;box-shadow:0 3px 10px #10233a1a;
+  }
+  #sidebar .pin-controls{position:sticky;top:0;z-index:30;display:flex;justify-content:flex-end;
+    padding:3px 10px;background:#fff;border-bottom:1px solid #e9eef4}
+  #sidebar .pin-toggle{display:inline-flex;align-items:center;gap:5px;
+    border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#184b78;
+    font-size:12px;font-weight:650;padding:4px 9px;min-height:30px}
+  #sidebar .pin-toggle[aria-pressed="true"]{background:#e6f1ff;border-color:#87add3}
+  #sidebar.is-pinned .search{top:36px!important}
+  #sidebar.is-pinned #detail>.site-head{top:calc(36px + var(--pin-search-height,0px))!important}
+}
+/* Pin is a landscape-only option; never clutter portrait/desktop. */
+.pin-controls{display:none}
+@media (orientation:landscape) and (max-height:650px) and (pointer:coarse){#sidebar .pin-controls{display:flex}}
+
+
+/* Stage 2.10 — same pin control and one continuous sidebar scroller on every screen.
+   Overrides earlier viewport-specific nested scrolling rules. */
+#sidebar{
+  display:block!important;
+  height:100vh!important;height:100dvh!important;min-height:0!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
+  touch-action:pan-y;
+}
+#sidebar .app-header,#sidebar .search,#sidebar #detail,#sidebar .sidebar-footer{
+  flex:none!important;height:auto!important;min-height:0!important;
+  max-height:none!important;overflow:visible!important;
+}
+#sidebar #detail{display:block!important;touch-action:pan-y!important}
+#sidebar .pin-controls{
+  display:flex!important;position:sticky!important;top:0!important;z-index:40;
+  justify-content:flex-end;padding:5px 12px;
+  background:#fff;border-bottom:1px solid #e9eef4;
+}
+#sidebar .pin-toggle{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:34px;padding:5px 10px;font-size:12px;font-weight:650;
+  color:#184b78;background:#fff;border:1px solid #cbd5e1;border-radius:8px;
+}
+#sidebar .pin-toggle[aria-pressed="true"]{background:#e6f1ff;border-color:#87add3}
+#sidebar .search,#sidebar #detail>.site-head,#sidebar .app-header{
+  position:static!important;top:auto!important;
+}
+#sidebar.is-pinned .search{
+  position:sticky!important;top:var(--pin-control-height,45px)!important;
+  z-index:30;background:#fff;box-shadow:0 3px 10px #10233a1a;
+  max-height:var(--pin-search-max,38dvh)!important;
+  overflow-y:auto!important;overscroll-behavior:contain;
+}
+#sidebar.is-pinned #detail>.site-head{
+  position:sticky!important;
+  top:calc(var(--pin-control-height,45px) + var(--pin-search-height,0px))!important;
+  z-index:29;background:#fff;box-shadow:0 3px 10px #10233a1a;
+  max-height:var(--pin-site-max,32dvh)!important;
+  overflow-y:auto!important;overscroll-behavior:contain;
+}
+/* The selected-site summary is inside #detail; its parent must not clip it. */
+#sidebar.is-pinned #detail{overflow:visible!important}
+@media (max-height:500px){
+  #sidebar{--pin-search-max:34dvh;--pin-site-max:27dvh}
+}
+@media(max-width:700px) and (orientation:portrait){
+  #sidebar{--pin-search-max:30dvh;--pin-site-max:32dvh}
+}

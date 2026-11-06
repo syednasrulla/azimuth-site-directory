@@ -69,6 +69,33 @@ const normalizeId=s=>clean(s).replace(/^([a-z]{2})\s*0*(\d+)$/i,(_,p,n)=>p.toUpp
 const fold=s=>clean(s).toLocaleLowerCase();
 const idOf=s=>normalizeId(s.properties['Site ID']||s.properties.name||'');
 const workspace=document.getElementById('workspace');
+// Universal pin: available in desktop, portrait and landscape.
+const pinButton=document.getElementById('pinSidebar');
+const sidebarElement=document.getElementById('sidebar');
+const searchElement=sidebarElement.querySelector('.search');
+const pinControls=sidebarElement.querySelector('.pin-controls');
+function syncPinnedHeight(){
+  if(!sidebarElement.classList.contains('is-pinned'))return;
+  const controlHeight=Math.ceil(pinControls.getBoundingClientRect().height);
+  const searchHeight=Math.ceil(searchElement.getBoundingClientRect().height);
+  sidebarElement.style.setProperty('--pin-control-height',controlHeight+'px');
+  sidebarElement.style.setProperty('--pin-search-height',searchHeight+'px');
+}
+if(pinButton){
+  pinButton.addEventListener('click',()=>{
+    const pinned=sidebarElement.classList.toggle('is-pinned');
+    pinButton.setAttribute('aria-pressed',String(pinned));
+    pinButton.textContent=pinned?'♧ Unpin search + site':'♧ Pin search + site';
+    pinButton.title=pinned?'Let search and selected site scroll away':'Keep search and selected site visible while scrolling';
+    syncPinnedHeight();
+  });
+  if(typeof ResizeObserver!=='undefined'){
+    const observer=new ResizeObserver(syncPinnedHeight);
+    observer.observe(searchElement);observer.observe(pinControls);
+  }
+  window.addEventListener('resize',syncPinnedHeight);
+}
+
 const collapseButton=document.getElementById('collapseSidebar');
 const expandButton=document.getElementById('expandSidebar');
 function setSidebarCollapsed(collapsed){
