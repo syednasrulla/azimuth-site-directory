@@ -93,3 +93,35 @@ a.contact-copy:visited{color:#18558b}
 .contact-action-group .contact-copy+.contact-copy{border-left:1px solid #cbd9e8!important}
 .contact-action-group .contact-copy:hover{background:#e8f2fc}
 @media(max-width:700px){.contact-actions .contact-action-group .contact-copy,.contact-actions .contact-action-group .contact-phone-copy,.contact-actions .contact-action-group .contact-email-copy{width:42px;min-width:42px;height:42px;flex-basis:42px}}
+
+/* Stage 2.5 — predictable sidebar toggle, independent of Leaflet zoom controls. */
+.expand-tab{left:14px;top:auto;bottom:18px;width:42px;height:42px;min-width:42px;padding:0;display:none;align-items:center;justify-content:center;border-radius:10px;font-size:29px;line-height:1;font-weight:400;z-index:850;box-shadow:0 2px 9px #0002}
+main.sidebar-collapsed .expand-tab{display:flex}
+.expand-tab:focus-visible{outline:3px solid #80b8f5;outline-offset:2px}
+/* Preview lives in the site header, between address and navigation. */
+.site-map-preview{display:none}
+/* Landscape phones: sidebar and full map coexist. */
+@media(max-width:700px) and (orientation:landscape){
+  aside{position:relative;inset:auto;transform:none;width:min(390px,46vw);max-width:46vw;min-width:0;flex:0 0 auto}
+  main.sidebar-collapsed aside{width:0;transform:none}
+  main:not(.sidebar-collapsed) #map{visibility:visible}
+  .app-header,.search,.sidebar-footer,#detail{min-width:0}
+  .app-header{padding:8px 12px;min-height:0}
+  .brand-logo{max-height:46px;width:auto;max-width:100%;object-fit:contain}
+  .search{padding:7px 12px}
+  #detail{padding:9px 12px}
+  .sidebar-footer{padding:4px 12px}
+  .expand-tab{bottom:12px;left:12px}
+}
+/* Portrait phones: a useful map in the full-width details view. */
+@media(max-width:700px) and (orientation:portrait){
+  .site-map-preview{display:block;margin-top:12px;border:1px solid #dce5ef;border-radius:11px;overflow:hidden;background:#f4f7fb}
+  .site-map-preview-label{padding:8px 11px;font-size:12px;font-weight:750;color:#314a66}
+  .site-map-preview-canvas{height:205px;width:100%;min-height:205px;z-index:0;background:#e6edf5;touch-action:pan-x pan-y}
+  .site-map-preview .leaflet-container{font-size:11px}
+  .site-map-preview .leaflet-control-zoom a{width:32px;height:32px;line-height:32px}
+  .site-map-preview .leaflet-top{top:4px}.site-map-preview .leaflet-left{left:4px}
+  .site-map-preview .leaflet-control-attribution{font-size:9px}
+  .quick-actions{margin-top:12px}
+  .expand-tab{left:12px;bottom:max(14px,env(safe-area-inset-bottom))}
+}

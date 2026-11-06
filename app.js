@@ -28,6 +28,37 @@ function setupProvinceFilters(){if(!provinceFilter)return;provinceFilter.replace
 }
 
 const markers=L.layerGroup().addTo(map);
+// A separate small Leaflet map is used only when a site is selected.
+// The large map remains intact for landscape and desktop use.
+let previewMap=null;
+const portraitQuery=window.matchMedia('(max-width:700px) and (orientation:portrait)');
+function updatePreviewLayout(){
+  if(selected && portraitQuery.matches && !previewMap){
+    const canvas=detail.querySelector('.site-map-preview-canvas');
+    if(canvas){const [lon,lat]=selected.geometry.coordinates;previewMap=L.map(canvas,{zoomControl:true,scrollWheelZoom:false,preferCanvas:true}).setView([lat,lon],15);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(previewMap);L.circleMarker([lat,lon],{radius:9,color:'#b45309',fillColor:'#f59e0b',fillOpacity:1,weight:3}).addTo(previewMap)}
+  }
+  if(previewMap && portraitQuery.matches){window.setTimeout(()=>previewMap?.invalidateSize({pan:false}),80)}
+  map.invalidateSize({pan:false});
+}
+portraitQuery.addEventListener?.('change',updatePreviewLayout);
+window.addEventListener('resize',updatePreviewLayout);
+function destroyPreview(){if(previewMap){previewMap.remove();previewMap=null}}
+function addSitePreview(parent,lat,lon,siteId){
+  const panel=document.createElement('section');panel.className='site-map-preview';
+  panel.setAttribute('aria-label','Map location for '+siteId);
+  const label=document.createElement('div');label.className='site-map-preview-label';label.textContent='Site location';
+  const canvas=document.createElement('div');canvas.className='site-map-preview-canvas';
+  panel.append(label,canvas);parent.append(panel);
+  // Initialize after the element has been inserted into the visible document.
+  // A fixed zoom makes the selected position immediately useful.
+  if(portraitQuery.matches){
+    previewMap=L.map(canvas,{zoomControl:true,scrollWheelZoom:false,preferCanvas:true,attributionControl:true}).setView([lat,lon],15);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(previewMap);
+    L.circleMarker([lat,lon],{radius:9,color:'#b45309',fillColor:'#f59e0b',fillOpacity:1,weight:3}).addTo(previewMap);
+    window.setTimeout(()=>previewMap?.invalidateSize({pan:false}),70);
+  }
+}
+
 const clean=s=>String(s??'').trim();
 const normalizeId=s=>clean(s).replace(/^([a-z]{2})\s*0*(\d+)$/i,(_,p,n)=>p.toUpperCase()+n.padStart(6,'0'));
 const fold=s=>clean(s).toLocaleLowerCase();
@@ -110,6 +141,7 @@ function contactsCard(parent,raw){
   });section.append(body);parent.append(section);
 }
 function choose(s){
+  destroyPreview();
   selected=s;const p=s.properties,[lon,lat]=s.geometry.coordinates;
   q.value=idOf(s);results.replaceChildren();matches=[];activeIndex=-1;
   status.textContent='Selected '+idOf(s)+' — '+clean(p['Site Name']);
@@ -118,6 +150,7 @@ function choose(s){
   const idRow=document.createElement('div');idRow.className='identity-row identity-primary';const id=document.createElement('div');id.className='site-id';id.textContent=idOf(s);idRow.append(id,copyIcon(idOf(s),'Copy site code'));const structure=clean(p['Antenna Structure']);const structureLabel=document.createElement('span');structureLabel.className='structure-badge'+(structure?'':' structure-unspecified');structureLabel.textContent=structure||'Not specified';structureLabel.title='Antenna Structure';idRow.append(structureLabel);head.append(idRow);
   const nameRow=document.createElement('div');nameRow.className='identity-row';const h=document.createElement('h2');h.textContent=clean(p['Site Name'])||'Unnamed site';nameRow.append(h);if(clean(p['Site Name']))nameRow.append(copyIcon(clean(p['Site Name']),'Copy site name'));head.append(nameRow);
   if(clean(p['Site Address'])){const address=document.createElement('div');address.className='address';address.textContent=clean(p['Site Address']);const addressRow=document.createElement('div');addressRow.className='identity-row';addressRow.append(address,copyIcon(clean(p['Site Address']),'Copy site address'));head.append(addressRow)}
+  addSitePreview(head,lat,lon,idOf(s));
   const actions=document.createElement('div');actions.className='quick-actions';
   const navigate=document.createElement('a');navigate.className='action primary';
   navigate.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(lat+','+lon);
