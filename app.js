@@ -249,12 +249,37 @@ function search(){
 q.setAttribute('autocomplete','off');q.setAttribute('aria-label','Search by Site ID, site name or address');
 results.setAttribute('role','listbox');results.setAttribute('aria-label','Matching sites');
 q.addEventListener('input',search);
+function keepSearchVisible(){
+  if(document.activeElement!==q)return;
+  const box=q.closest('.search-box');
+  if(!box)return;
+  box.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
+}
+q.addEventListener('focus',()=>requestAnimationFrame(keepSearchVisible));
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',()=>requestAnimationFrame(keepSearchVisible));
+}
+
 q.addEventListener('keydown',e=>{
   if(e.key==='Escape'){results.replaceChildren();matches=[];activeIndex=-1;return}
   if(e.key==='ArrowDown'||e.key==='ArrowUp'){
     if(!matches.length)return;e.preventDefault();activeIndex=e.key==='ArrowDown'?(activeIndex+1)%matches.length:(activeIndex<=0?matches.length-1:activeIndex-1);updateActive();return;
   }
-  if(e.key==='Enter'){e.preventDefault();q.blur();if(matches.length){choose(matches[activeIndex>=0?activeIndex:0]);requestAnimationFrame(()=>{sidebarElement.scrollTop=isPinned?0:Math.max(0,detail.offsetTop-12)})}else{requestAnimationFrame(()=>results.scrollIntoView({block:'nearest'}))}}
+  if(e.key==='Enter'){
+    // The phone's Done/Go/OK key submits the query, not a site selection.
+    // Keep all matches visible until the technician explicitly taps one.
+    e.preventDefault();
+    q.blur();
+    activeIndex=-1;
+    updateActive();
+    requestAnimationFrame(()=>{
+      // The keyboard may still be closing. Keep the query and its results in view.
+      const searchBox=q.closest('.search-box');
+      if(searchBox && !isPinned){
+        sidebarElement.scrollTop=Math.max(0,searchBox.offsetTop+searchBox.parentElement.offsetTop-12);
+      }
+    });
+  }
 });
 map.on('moveend',renderMarkers);
 (async()=>{try{const data=await Promise.all(files.map(async f=>{const r=await fetch(f);if(!r.ok)throw Error('Could not load '+f);return r.json()}));

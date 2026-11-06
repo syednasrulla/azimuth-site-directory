@@ -349,3 +349,8 @@ html,body{height:100%;overflow:hidden}
   #workspace #sidebar.is-pinned .search{max-height:29dvh!important}
   #workspace #sidebar.is-pinned .pinned-site{top:calc(36px + 29dvh)!important;max-height:27dvh!important}
 }
+
+/* Stage 2.12: keep the typing field visible above phone keyboards. */
+#workspace #sidebar .search-box{scroll-margin-top:12px;scroll-margin-bottom:20px}
+#workspace #sidebar .search input{font-size:16px!important}
+#workspace #sidebar #results{scroll-margin-top:12px}
