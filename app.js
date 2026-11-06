@@ -35,7 +35,7 @@ const portraitQuery=window.matchMedia('(max-width:700px) and (orientation:portra
 function destroyPreview(){if(previewMap){previewMap.remove();previewMap=null}}
 function initializePreview(){
   if(!selected || !portraitQuery.matches || previewMap)return;
-  const canvas=detail.querySelector('.site-map-preview-canvas');
+  const canvas=sidebarElement.querySelector('.site-map-preview-canvas');
   if(!canvas || !canvas.getBoundingClientRect().width)return;
   const [lon,lat]=selected.geometry.coordinates;
   previewMap=L.map(canvas,{
@@ -69,32 +69,25 @@ const normalizeId=s=>clean(s).replace(/^([a-z]{2})\s*0*(\d+)$/i,(_,p,n)=>p.toUpp
 const fold=s=>clean(s).toLocaleLowerCase();
 const idOf=s=>normalizeId(s.properties['Site ID']||s.properties.name||'');
 const workspace=document.getElementById('workspace');
-// Universal pin: available in desktop, portrait and landscape.
+// A single scroll container owns the entire sidebar. Pinning moves the actual
+// selected-site card into a direct-child sticky dock (no cloned Leaflet maps).
 const pinButton=document.getElementById('pinSidebar');
 const sidebarElement=document.getElementById('sidebar');
-const searchElement=sidebarElement.querySelector('.search');
-const pinControls=sidebarElement.querySelector('.pin-controls');
-function syncPinnedHeight(){
-  if(!sidebarElement.classList.contains('is-pinned'))return;
-  const controlHeight=Math.ceil(pinControls.getBoundingClientRect().height);
-  const searchHeight=Math.ceil(searchElement.getBoundingClientRect().height);
-  sidebarElement.style.setProperty('--pin-control-height',controlHeight+'px');
-  sidebarElement.style.setProperty('--pin-search-height',searchHeight+'px');
-}
-if(pinButton){
-  pinButton.addEventListener('click',()=>{
-    const pinned=sidebarElement.classList.toggle('is-pinned');
-    pinButton.setAttribute('aria-pressed',String(pinned));
-    pinButton.textContent=pinned?'♧ Unpin search + site':'♧ Pin search + site';
-    pinButton.title=pinned?'Let search and selected site scroll away':'Keep search and selected site visible while scrolling';
-    syncPinnedHeight();
-  });
-  if(typeof ResizeObserver!=='undefined'){
-    const observer=new ResizeObserver(syncPinnedHeight);
-    observer.observe(searchElement);observer.observe(pinControls);
+const pinnedSite=document.getElementById('pinnedSite');
+let isPinned=false;
+function applyPin(){
+  const head=(pinnedSite.querySelector('.site-head')||detail.querySelector('.site-head'));
+  if(head){
+    if(isPinned){pinnedSite.append(head)}
+    else detail.prepend(head);
   }
-  window.addEventListener('resize',syncPinnedHeight);
+  sidebarElement.classList.toggle('is-pinned',isPinned);
+  pinButton.setAttribute('aria-pressed',String(isPinned));
+  const label=isPinned?'Unpin search and site':'Pin search and site at top';
+  pinButton.title=label;pinButton.setAttribute('aria-label',label);
+  requestAnimationFrame(updatePreviewLayout);
 }
+pinButton.addEventListener('click',()=>{isPinned=!isPinned;applyPin()});
 
 const collapseButton=document.getElementById('collapseSidebar');
 const expandButton=document.getElementById('expandSidebar');
@@ -177,6 +170,8 @@ function choose(s){
   selected=s;const p=s.properties,[lon,lat]=s.geometry.coordinates;
   q.value=idOf(s);results.replaceChildren();matches=[];activeIndex=-1;
   status.textContent='Selected '+idOf(s)+' — '+clean(p['Site Name']);
+  // Return a previously pinned card before replacing the detail contents.
+  pinnedSite.replaceChildren();
   detail.replaceChildren();
   const head=document.createElement('section');head.className='site-head';
   const idRow=document.createElement('div');idRow.className='identity-row identity-primary';const id=document.createElement('div');id.className='site-id';id.textContent=idOf(s);idRow.append(id,copyIcon(idOf(s),'Copy site code'));const structure=clean(p['Antenna Structure']);const structureLabel=document.createElement('span');structureLabel.className='structure-badge'+(structure?'':' structure-unspecified');structureLabel.textContent=structure||'Not specified';structureLabel.title='Antenna Structure';idRow.append(structureLabel);head.append(idRow);
@@ -188,7 +183,7 @@ function choose(s){
   navigate.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(lat+','+lon);
   navigate.target='_blank';navigate.rel='noopener noreferrer';navigate.textContent='↗ Open in Google Maps';actions.append(navigate);
   head.append(actions);detail.append(head);
-  detail.scrollTop=0;requestAnimationFrame(initializePreview);
+  requestAnimationFrame(initializePreview);
   const coords=clean(p['GPS Coordinates'])||lat+', '+lon;
   coordinatesCard(detail,coords);
   card(detail,'Site Information & Notes',p['Site Info / Notes'],true);
@@ -199,6 +194,7 @@ function choose(s){
     card(detail,key,value,false);
   }
   const live=document.createElement('div');live.id='copyStatus';live.className='sr-only';live.setAttribute('role','status');live.setAttribute('aria-live','polite');detail.append(live);
+  applyPin();
   if(workspace.classList.contains('sidebar-collapsed'))setSidebarCollapsed(false);
   map.flyTo([lat,lon],15,{duration:.65});renderMarkers();
 }
@@ -247,7 +243,7 @@ function search(){
   matches.forEach((s,i)=>{const p=s.properties,b=document.createElement('button');b.type='button';b.className='site-result';
     const name=document.createElement('strong');name.textContent=idOf(s)+' — '+clean(p['Site Name']);b.append(name);
     if(clean(p['Site Address'])){const address=document.createElement('span');address.className='result-address';address.textContent=clean(p['Site Address']);b.append(address)}
-    b.setAttribute('role','option');b.setAttribute('aria-selected','false');b.addEventListener('click',()=>choose(s));results.append(b);
+    b.setAttribute('role','option');b.setAttribute('aria-selected','false');b.addEventListener('click',()=>{q.blur();choose(s);requestAnimationFrame(()=>{sidebarElement.scrollTop=isPinned?0:Math.max(0,detail.offsetTop-12)})});results.append(b);
   });
 }
 q.setAttribute('autocomplete','off');q.setAttribute('aria-label','Search by Site ID, site name or address');
@@ -258,7 +254,7 @@ q.addEventListener('keydown',e=>{
   if(e.key==='ArrowDown'||e.key==='ArrowUp'){
     if(!matches.length)return;e.preventDefault();activeIndex=e.key==='ArrowDown'?(activeIndex+1)%matches.length:(activeIndex<=0?matches.length-1:activeIndex-1);updateActive();return;
   }
-  if(e.key==='Enter'&&matches.length){e.preventDefault();choose(matches[activeIndex>=0?activeIndex:0])}
+  if(e.key==='Enter'){e.preventDefault();q.blur();if(matches.length){choose(matches[activeIndex>=0?activeIndex:0]);requestAnimationFrame(()=>{sidebarElement.scrollTop=isPinned?0:Math.max(0,detail.offsetTop-12)})}else{requestAnimationFrame(()=>results.scrollIntoView({block:'nearest'}))}}
 });
 map.on('moveend',renderMarkers);
 (async()=>{try{const data=await Promise.all(files.map(async f=>{const r=await fetch(f);if(!r.ok)throw Error('Could not load '+f);return r.json()}));

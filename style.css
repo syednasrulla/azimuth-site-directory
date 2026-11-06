@@ -293,3 +293,59 @@ html,body{height:100%;overflow:hidden}
 @media(max-width:700px) and (orientation:portrait){
   #sidebar{--pin-search-max:30dvh;--pin-site-max:32dvh}
 }
+
+/* Stage 2.11 — unified native scrolling in ALL modes.
+   Override legacy flexbox and nested-scroll rules from earlier stages. */
+#workspace #sidebar{
+  display:block!important;overflow-x:hidden!important;overflow-y:auto!important;
+  height:100dvh!important;max-height:100dvh!important;min-height:0!important;
+  -webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
+  touch-action:pan-y;position:relative;
+}
+#workspace #sidebar .app-header,
+#workspace #sidebar .search,
+#workspace #sidebar #detail,
+#workspace #sidebar .sidebar-footer{
+  position:static!important;display:block;flex:none!important;
+  height:auto!important;min-height:0!important;max-height:none!important;
+  overflow:visible!important;touch-action:pan-y!important;
+}
+#workspace #sidebar .app-header{display:flex!important}
+#workspace #sidebar .search{min-width:0!important}
+#workspace #sidebar #detail{min-width:0!important;padding-bottom:24px}
+#workspace #sidebar #results{max-height:none!important;overflow:visible!important}
+#workspace #sidebar .pin-controls{
+  position:static!important;display:flex!important;justify-content:flex-end;
+  padding:3px 9px!important;height:auto!important;min-height:0!important;
+  background:#fff;border-bottom:1px solid #e9eef4;
+}
+#workspace #sidebar .pin-toggle{
+  display:inline-flex!important;align-items:center;justify-content:center;
+  width:30px!important;height:30px!important;min-width:30px!important;
+  padding:3px!important;border-radius:7px!important;font-size:0!important;
+  background:#fff;border:1px solid #d4dfec;color:#47627c;cursor:pointer;
+}
+#workspace #sidebar .pin-toggle[aria-pressed="true"]{background:#dcecff;color:#175a98;border-color:#7eafd9}
+.pin-symbol{width:17px;height:17px;display:block;flex:none}
+#workspace #sidebar .pinned-site{display:none}
+/* Sticky sections are direct children of the scroll container, not inside #detail. */
+#workspace #sidebar.is-pinned .pin-controls{position:sticky!important;top:0!important;z-index:60}
+#workspace #sidebar.is-pinned .search{
+  position:sticky!important;top:36px!important;z-index:59;
+  max-height:34dvh!important;overflow-y:auto!important;
+  background:#fff;box-shadow:0 2px 5px #0000000a;
+}
+#workspace #sidebar.is-pinned .pinned-site{
+  display:block;position:sticky!important;top:calc(36px + 34dvh)!important;
+  max-height:30dvh!important;overflow-y:auto!important;
+  z-index:58;background:#f8fafc;padding:5px 10px;
+  box-shadow:0 3px 8px #00000013;
+}
+#workspace #sidebar.is-pinned .pinned-site .site-head{
+  position:static!important;max-height:none!important;overflow:visible!important;margin:0!important;
+}
+/* The selected-site dock and search occupy at most 64% of the viewport. */
+@media(max-height:420px){
+  #workspace #sidebar.is-pinned .search{max-height:29dvh!important}
+  #workspace #sidebar.is-pinned .pinned-site{top:calc(36px + 29dvh)!important;max-height:27dvh!important}
+}
