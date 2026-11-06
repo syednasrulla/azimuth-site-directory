@@ -1,0 +1,95 @@
+*{box-sizing:border-box}html,body{margin:0;height:100%;font:14px/1.5 system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#1e293b}button,input{font:inherit}button{cursor:pointer}main{display:flex;height:100dvh;overflow:hidden;position:relative;background:#f8fafc}aside{width:420px;max-width:50vw;flex:0 0 auto;display:flex;flex-direction:column;background:#fff;z-index:1000;box-shadow:3px 0 18px #10233a14;transition:width .22s ease,transform .22s ease;overflow:hidden}main.sidebar-collapsed aside{width:0;box-shadow:none}#map{flex:1;min-width:0;height:100%;z-index:1}.app-header{padding:17px 18px 15px;border-bottom:1px solid #e9eef4;display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:350px}.brand{display:flex;align-items:center;gap:11px;min-width:0}.brand-mark{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:11px;background:#173d63;color:white;font-size:20px;font-weight:800}.brand h1{font-size:16px;letter-spacing:-.025em;line-height:1.25;margin:0}.brand small{color:#64748b;font-size:11px}.separator{margin:0 2px}.icon-btn{border:1px solid #e2e8f0;background:#fff;border-radius:9px;width:32px;height:32px;color:#475569;font-size:25px;line-height:20px}.icon-btn:hover,.expand-tab:hover{background:#edf4fc}.expand-tab{display:none;position:absolute;left:12px;top:14px;z-index:1001;border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:9px 13px;box-shadow:0 3px 15px #0002;font-weight:650;color:#173d63;gap:8px;align-items:center}main.sidebar-collapsed .expand-tab{display:flex}.search{padding:15px 18px 11px;border-bottom:1px solid #e9eef4;min-width:350px}.eyebrow{display:block;font-size:10px;letter-spacing:.1em;font-weight:800;color:#64748b;margin-bottom:8px}.search-box{display:flex;align-items:center;border:1px solid #cbd5e1;border-radius:10px;background:#fff;padding:0 10px;box-shadow:0 1px 2px #00000008}.search-box:focus-within{border-color:#3976ba;box-shadow:0 0 0 3px #dbeafe}.search-icon{font-size:23px;color:#64748b;margin-right:8px}.search input{border:0;outline:0;width:100%;min-width:0;padding:10px 0;font-size:14px;background:transparent}#status{color:#64748b;font-size:11px;margin:7px 0 0}#results{max-height:195px;overflow:auto}#results button{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid #edf2f7;padding:10px 6px;cursor:pointer;border-radius:6px}#results button:hover,#results button.active{background:#eff6ff}#results strong{display:block;font-size:12px;color:#183c60}#results .result-address{display:block;color:#64748b;font-size:11px;margin-top:2px}#detail{padding:17px 18px 24px;overflow:auto;flex:1;min-width:350px;background:#f8fafc}.empty-state{text-align:center;padding:52px 24px;color:#64748b}.empty-state h2{color:#1e293b;margin:10px 0 5px;font-size:17px}.empty-state p{margin:0;font-size:13px}.empty-symbol{font-size:36px;color:#7a9cba}.site-head{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:16px;box-shadow:0 2px 7px #10233a07;margin-bottom:12px}.site-id{display:inline-block;background:#e9f3ff;color:#15518b;font-size:11px;letter-spacing:.045em;font-weight:800;border-radius:6px;padding:4px 8px;margin-bottom:9px}.site-head h2{font-size:18px;line-height:1.32;letter-spacing:-.025em;margin:0 0 10px}.address{color:#526174;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}.quick-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.action{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid #cbd5e1;border-radius:9px;padding:9px 12px;font-size:12px;font-weight:700;background:#fff;color:#184b78;cursor:pointer}.action.primary{background:#175a98;color:#fff;border-color:#175a98}.action:hover{filter:brightness(.96)}.detail-card{background:#fff;border:1px solid #e5eaf0;border-radius:13px;margin:0 0 12px;box-shadow:0 2px 7px #10233a07;overflow:hidden}.detail-card summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;font-size:13px;font-weight:750;cursor:pointer;user-select:none}.detail-card summary::-webkit-details-marker{display:none}.detail-card summary:after{content:'⌄';font-size:18px;color:#64748b;transition:transform .15s}.detail-card:not([open]) summary:after{transform:rotate(-90deg)}.detail-card summary:hover{background:#f8fafc}.detail-card .card-body{padding:0 15px 15px;border-top:1px solid #f0f3f7}.detail-card .content{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12.5px;line-height:1.75;color:#334155;padding-top:11px}.detail-card .empty-content{color:#94a3b8;font-style:italic}.detail-card .coordinates{font-variant-numeric:tabular-nums}.sidebar-footer{padding:9px 18px;font-size:10px;color:#94a3b8;border-top:1px solid #e9eef4;background:#fff;min-width:350px}@media(max-width:700px){aside{width:100%;max-width:none;position:absolute;inset:0 0 0 auto;z-index:1000}main.sidebar-collapsed aside{width:100%;transform:translateX(-100%)}#map{width:100%}.app-header{padding:13px 14px}.search{padding:12px 14px 9px}#detail{padding:12px 14px 22px}.expand-tab{top:12px;left:12px}main:not(.sidebar-collapsed) #map{visibility:hidden}}@media(prefers-reduced-motion:reduce){aside{transition:none}}
+/* Long source records remain readable without clipping */
+.detail-card .content{white-space:pre-wrap;overflow-wrap:anywhere;user-select:text}.detail-card summary:focus-visible,.icon-btn:focus-visible,.expand-tab:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
+
+/* Stage 1.4: readable, scannable site details and discoverable inline copy controls */
+html,body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:15px;line-height:1.55;color:#172b4d}
+#detail{background:#f5f7fa}.site-head,.detail-card{background:#fff;border-color:#dfe5ed}
+.site-id{font-size:17px;line-height:1.25;letter-spacing:.015em;font-weight:800;background:#e8f2fc;color:#164a7c;padding:7px 10px;margin-bottom:10px}
+.site-head h2{font-size:19px;line-height:1.4;font-weight:720;color:#14263d}
+.address{font-size:14px;line-height:1.6;color:#43566d}
+.action{font-size:14px;min-height:42px;padding:10px 14px}
+.detail-card summary,.static-heading{font-size:15px;font-weight:730;color:#1d3551}
+.detail-card .content{font-size:14px;line-height:1.7;color:#27394f}
+.static-heading{margin:0;padding:13px 15px 9px}
+.copy-row{display:flex;align-items:center;gap:6px;padding:0 12px 14px 15px;min-width:0}
+.copyable-value{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;cursor:copy;border-radius:5px;padding:5px 3px;margin-left:-3px}
+.copyable-value:hover{background:#eaf3fd}.copyable-value:focus-visible{outline:3px solid #80b8f5;outline-offset:2px}
+.copy-icon{display:inline-grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border:1px solid transparent;border-radius:7px;background:transparent;color:#426b92;cursor:pointer}
+.copy-icon:hover,.copy-icon:focus-visible{background:#eaf3fd;border-color:#bfd6ed;color:#154b82}.copy-icon:focus-visible{outline:2px solid #80b8f5;outline-offset:2px}
+.copy-icon.copied,.copyable-value.copied{color:#176344;background:#e4f7ed}
+.section-heading{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid #edf1f5}
+.section-heading h3{font:inherit;margin:0}.contact-lines{padding:4px 12px 12px 15px}
+.contact-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;border-bottom:1px solid #f0f3f7;min-height:38px;padding:5px 0}
+.contact-row:last-child{border-bottom:0}.contact-text{white-space:pre-wrap;overflow-wrap:anywhere;min-width:0;flex:1;font-size:14px;line-height:1.65;color:#27394f;padding:4px 0}
+.contact-gap{height:8px}.contact-row .copy-icon{margin-top:1px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:700px){.site-id{font-size:16px}.site-head h2{font-size:18px}.copy-icon{width:38px;height:38px;flex-basis:38px}.contact-row{min-height:44px}}
+
+/* Stage 1.5 — official-style wordmark and contextual copy actions */
+.app-header{min-height:94px}.brand-identity{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0}.brand-logo{display:block;width:min(280px,100%);height:auto;max-height:67px;object-fit:contain;object-position:left center}.brand-identity small{font-size:11px;color:#64748b;padding-left:3px}.identity-row{display:flex;align-items:center;gap:5px;min-width:0;margin-bottom:6px}.identity-row .site-id{margin-bottom:0}.identity-row h2{flex:1;min-width:0;margin:0}.identity-row .address{flex:1;min-width:0}.identity-row .copy-icon{flex:0 0 34px}.contact-actions{display:flex;flex-wrap:wrap;gap:5px;align-items:center;justify-content:flex-end;flex:0 0 auto}.contact-copy{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:73px;width:auto;height:34px;padding:5px 8px;white-space:nowrap;border:1px solid #d2dfed;border-radius:8px;background:#f7faff;font-size:12px;font-weight:650;color:#18558b}.contact-copy svg{flex:0 0 16px}.contact-row{align-items:center}.contact-text{font-size:14px}.copy-icon:active,.contact-copy:active{transform:scale(.98)}@media(max-width:700px){.brand-logo{width:230px}.app-header{min-height:83px}.contact-row{flex-wrap:wrap}.contact-actions{margin-left:auto}}
+
+/* Stage 1.6: compact stacked contact-copy controls */
+.contact-row{display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:10px 0 12px}
+.contact-text{width:100%;flex:none;padding:0;line-height:1.65}
+.contact-actions{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:5px;margin:0;flex:none;width:100%}
+.contact-copy{display:inline-grid;place-items:center;min-width:0;width:32px;height:32px;flex:none;padding:0;border-radius:8px;background:#f7faff;border:1px solid #d2dfed;color:#18558b}
+.contact-copy svg{width:17px;height:17px;flex:none}
+.contact-copy:hover{background:#e8f2fc;border-color:#a9c5e3}
+.contact-copy:focus-visible{outline:3px solid #80b8f5;outline-offset:2px}
+@media(max-width:700px){.contact-row{flex-direction:column;align-items:stretch}.contact-actions{margin:0;align-items:flex-start}.contact-copy{width:38px;height:38px}}
+
+/* Stage 1.7: province filters and viewport rendering feedback */
+.province-filter{border:0;margin:9px 0 7px;padding:0;min-width:0}
+.province-filter legend{font-size:11px;font-weight:750;letter-spacing:.07em;color:#53657a;margin-bottom:6px}
+.province-options{display:flex;flex-wrap:wrap;gap:7px}
+.province-option{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid #d6e1ee;border-radius:999px;background:#f7faff;font-weight:650;color:#27425f;cursor:pointer;min-height:36px}
+.province-option:has(input:not(:checked)){background:#fff;color:#748294}
+.province-option input{width:16px;height:16px;accent-color:#1764a8;margin:0;cursor:pointer}
+.province-option:focus-within{outline:2px solid #7eb8f3;outline-offset:2px}
+.map-count{position:absolute;z-index:450;bottom:22px;right:14px;max-width:min(340px,55vw);background:#ffffffed;border:1px solid #d8e1ec;border-radius:8px;padding:6px 10px;font-size:11px;color:#475467;pointer-events:none;box-shadow:0 1px 5px #0001}
+@media(max-width:700px){.map-count{bottom:8px;right:8px;font-size:10px;max-width:65vw}.province-option{min-height:40px}}
+
+/* Stage 1.9: structure beside site code and improved narrow-screen touch layout */
+.identity-primary{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.identity-primary .site-id{margin:0}
+.structure-badge{display:inline-flex;align-items:center;max-width:100%;padding:6px 9px;border:1px solid #c6d9d1;border-radius:7px;background:#edf7f2;color:#236046;font-size:12px;font-weight:750;line-height:1.35;overflow-wrap:anywhere}
+.structure-unspecified{background:#f1f5f9;border-color:#e2e8f0;color:#64748b}
+@media(max-width:700px){
+  .app-header,.search,.sidebar-footer,#detail{min-width:0}
+  .brand{flex:1;min-width:0}.brand-identity{min-width:0}.brand-logo{max-width:100%;width:min(230px,100%)}
+  .icon-btn{flex:0 0 40px;width:40px;height:40px}
+  .search input{font-size:16px}
+  .identity-primary{gap:8px}.structure-badge{font-size:12px}
+  .detail-card summary{min-height:44px}
+  .quick-actions .action{min-height:44px}
+  #detail{padding-bottom:max(24px,env(safe-area-inset-bottom))}
+  .expand-tab{min-height:44px}
+}
+@media(max-width:370px){.site-head{padding:12px}.site-id{font-size:15px}.structure-badge{font-size:11px}}
+
+/* Stage 2.1: contact actions are links that open phone/email apps. */
+a.contact-copy{text-decoration:none;cursor:pointer}
+a.contact-copy:visited{color:#18558b}
+
+/* Stage 2.2: compact, consistent Call + Copy controls for each phone number. */
+.contact-actions .contact-phone-copy{width:32px;height:32px;min-width:0;padding:0;border-radius:8px;background:#f7faff;border:1px solid #d2dfed;color:#18558b;display:inline-grid;place-items:center}
+.contact-actions .contact-phone-copy svg{width:17px;height:17px}
+@media(max-width:700px){.contact-actions .contact-phone-copy{width:38px;height:38px}}
+
+/* Stage 2.3 — compact, consistent contact actions on a single horizontal row.
+   Keep source text full-width; icon buttons stay below it without stacking. */
+.contact-row{display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:9px 0 10px}
+.contact-text{display:block;width:100%;min-width:0;overflow-wrap:anywhere;line-height:1.5}
+.contact-actions{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:6px;width:100%;margin:0}
+.contact-actions .contact-copy,.contact-actions .contact-phone-copy,.contact-actions .contact-email-copy{display:inline-grid;place-items:center;flex:0 0 36px;width:36px;height:36px;min-width:36px;padding:0;border-radius:9px}
+.contact-actions .contact-copy svg{width:17px;height:17px}
+@media(max-width:700px){.contact-row{flex-direction:column;align-items:stretch}.contact-actions{flex-direction:row;flex-wrap:wrap;gap:7px;margin:0;align-items:center}.contact-actions .contact-copy,.contact-actions .contact-phone-copy,.contact-actions .contact-email-copy{width:40px;height:40px;min-width:40px;flex-basis:40px}}
+
+/* Stage 2.4: keep each contact's primary action and copy control together. */
+.contact-actions{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px}
+.contact-action-group{display:inline-flex;align-items:center;flex-wrap:nowrap;gap:0;border:1px solid #cbd9e8;border-radius:10px;overflow:hidden;background:#f7faff;flex:none}
+.contact-actions .contact-action-group .contact-copy,.contact-actions .contact-action-group .contact-phone-copy,.contact-actions .contact-action-group .contact-email-copy{border:0;border-radius:0;background:transparent;width:38px;min-width:38px;height:38px;flex:0 0 38px;margin:0}
+.contact-action-group .contact-copy+.contact-copy{border-left:1px solid #cbd9e8!important}
+.contact-action-group .contact-copy:hover{background:#e8f2fc}
+@media(max-width:700px){.contact-actions .contact-action-group .contact-copy,.contact-actions .contact-action-group .contact-phone-copy,.contact-actions .contact-action-group .contact-email-copy{width:42px;min-width:42px;height:42px;flex-basis:42px}}
