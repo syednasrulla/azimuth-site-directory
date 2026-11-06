@@ -28,35 +28,40 @@ function setupProvinceFilters(){if(!provinceFilter)return;provinceFilter.replace
 }
 
 const markers=L.layerGroup().addTo(map);
-// A separate small Leaflet map is used only when a site is selected.
-// The large map remains intact for landscape and desktop use.
+// Portrait preview is non-draggable so vertical swipes scroll the site details.
+// Zoom buttons remain interactive; map is initialized after it is visible.
 let previewMap=null;
 const portraitQuery=window.matchMedia('(max-width:700px) and (orientation:portrait)');
+function destroyPreview(){if(previewMap){previewMap.remove();previewMap=null}}
+function initializePreview(){
+  if(!selected || !portraitQuery.matches || previewMap)return;
+  const canvas=detail.querySelector('.site-map-preview-canvas');
+  if(!canvas || !canvas.getBoundingClientRect().width)return;
+  const [lon,lat]=selected.geometry.coordinates;
+  previewMap=L.map(canvas,{
+    zoomControl:true,scrollWheelZoom:false,dragging:false,touchZoom:false,
+    doubleClickZoom:false,boxZoom:false,keyboard:false,preferCanvas:true
+  }).setView([lat,lon],15);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(previewMap);
+  L.circleMarker([lat,lon],{radius:9,color:'#b45309',fillColor:'#f59e0b',fillOpacity:1,weight:3}).addTo(previewMap);
+  requestAnimationFrame(()=>previewMap?.invalidateSize({pan:false}));
+}
 function updatePreviewLayout(){
-  if(selected && portraitQuery.matches && !previewMap){
-    const canvas=detail.querySelector('.site-map-preview-canvas');
-    if(canvas){const [lon,lat]=selected.geometry.coordinates;previewMap=L.map(canvas,{zoomControl:true,scrollWheelZoom:false,preferCanvas:true}).setView([lat,lon],15);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(previewMap);L.circleMarker([lat,lon],{radius:9,color:'#b45309',fillColor:'#f59e0b',fillOpacity:1,weight:3}).addTo(previewMap)}
-  }
-  if(previewMap && portraitQuery.matches){window.setTimeout(()=>previewMap?.invalidateSize({pan:false}),80)}
-  map.invalidateSize({pan:false});
+  if(!portraitQuery.matches)destroyPreview();
+  else requestAnimationFrame(initializePreview);
+  requestAnimationFrame(()=>map.invalidateSize({pan:false}));
 }
 portraitQuery.addEventListener?.('change',updatePreviewLayout);
 window.addEventListener('resize',updatePreviewLayout);
-function destroyPreview(){if(previewMap){previewMap.remove();previewMap=null}}
 function addSitePreview(parent,lat,lon,siteId){
   const panel=document.createElement('section');panel.className='site-map-preview';
   panel.setAttribute('aria-label','Map location for '+siteId);
-  const label=document.createElement('div');label.className='site-map-preview-label';label.textContent='Site location';
+  const label=document.createElement('div');label.className='site-map-preview-label';label.textContent='Site location · use + / − to zoom';
   const canvas=document.createElement('div');canvas.className='site-map-preview-canvas';
   panel.append(label,canvas);parent.append(panel);
-  // Initialize after the element has been inserted into the visible document.
-  // A fixed zoom makes the selected position immediately useful.
-  if(portraitQuery.matches){
-    previewMap=L.map(canvas,{zoomControl:true,scrollWheelZoom:false,preferCanvas:true,attributionControl:true}).setView([lat,lon],15);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(previewMap);
-    L.circleMarker([lat,lon],{radius:9,color:'#b45309',fillColor:'#f59e0b',fillOpacity:1,weight:3}).addTo(previewMap);
-    window.setTimeout(()=>previewMap?.invalidateSize({pan:false}),70);
-  }
+  // Called from choose() after the site header is attached to the document.
 }
 
 const clean=s=>String(s??'').trim();
@@ -156,6 +161,7 @@ function choose(s){
   navigate.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(lat+','+lon);
   navigate.target='_blank';navigate.rel='noopener noreferrer';navigate.textContent='↗ Open in Google Maps';actions.append(navigate);
   head.append(actions);detail.append(head);
+  detail.scrollTop=0;requestAnimationFrame(initializePreview);
   const coords=clean(p['GPS Coordinates'])||lat+', '+lon;
   coordinatesCard(detail,coords);
   card(detail,'Site Information & Notes',p['Site Info / Notes'],true);
