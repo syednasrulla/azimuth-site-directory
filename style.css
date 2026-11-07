@@ -354,3 +354,96 @@ html,body{height:100%;overflow:hidden}
 #workspace #sidebar .search-box{scroll-margin-top:12px;scroll-margin-bottom:20px}
 #workspace #sidebar .search input{font-size:16px!important}
 #workspace #sidebar #results{scroll-margin-top:12px}
+
+/* Stage 2.18: compact location finder, consistent in all viewport modes. */
+.nearby-finder{margin:12px 0 8px;padding:12px;border:1px solid #d9e6f4;border-radius:13px;background:linear-gradient(160deg,#f7fbff,#fff 75%);box-shadow:0 2px 8px #1645750a;min-width:0}
+.nearby-heading{display:flex;align-items:center;gap:8px;color:#183d63;font-size:13px;margin-bottom:10px}.nearby-glyph{display:grid;place-items:center;width:27px;height:27px;border-radius:9px;background:#e1f2ff;color:#0872a8;font-size:21px}.nearby-clear{margin-left:auto;border:0;background:none;color:#3976a5;font-size:11px;padding:5px}
+.nearby-mode{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;padding:3px;border-radius:9px;background:#eaf1f8}.nearby-mode button{min-width:0;border:0;border-radius:7px;padding:8px 3px;font-size:10.5px;font-weight:650;line-height:1.25;color:#52677c;background:transparent}.nearby-mode button.active{color:#0d548a;background:#fff;box-shadow:0 1px 4px #1a406a20}
+.nearby-range-head{display:flex;justify-content:space-between;align-items:center;gap:6px;margin:12px 0 4px;font-size:11.5px;font-weight:650}.nearby-range-head output{color:#086caa;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}.nearby-slider{width:100%;accent-color:#0b76b7;min-height:27px;cursor:pointer}.nearby-range-ends{display:flex;justify-content:space-between;color:#748397;font-size:10px;margin-top:-2px}
+.nearby-find{display:block;width:100%;border:0;background:#155f98;color:white;border-radius:9px;padding:10px 12px;font-weight:750;font-size:12px;margin-top:10px}.nearby-find:active{transform:translateY(1px)}.nearby-status{color:#64748b;font-size:11px;line-height:1.45;margin:9px 0 0;overflow-wrap:anywhere}.nearby-results{max-height:235px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}.nearby-result{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;border:0;border-bottom:1px solid #e7eef6;background:transparent;padding:10px 2px;color:#23425d}.nearby-result strong{display:block;font-size:12px}.nearby-result small{display:block;font-size:11px;color:#64748b;overflow-wrap:anywhere}.nearby-result:hover{background:#eaf5ff}.nearby-distance{flex:none;color:#0874ad;background:#e3f4ff;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:750}.nearby-empty{font-size:11px;color:#64748b}
+.nearby-place-row{margin-top:10px}.nearby-place-row[hidden]{display:none!important}.nearby-place-row>label:first-child{display:block;font-size:11px;color:#53657a;margin-bottom:5px}.nearby-place-input{display:flex;gap:5px}.nearby-place-input input{min-width:0;flex:1;border:1px solid #cbd5e1;border-radius:8px;padding:9px 7px;font-size:16px;background:#fff}.nearby-place-input button{border:0;border-radius:8px;background:#e0f1fd;color:#075b91;font-weight:750;padding:0 10px}.nearby-route-option{display:flex;align-items:center;gap:6px;font-size:11px;margin-top:8px;color:#40566d}.nearby-route-option input{accent-color:#0b76b7}.nearby-glow{filter:drop-shadow(0 0 5px #06b6d4) drop-shadow(0 0 8px #38bdf8)}
+@media (max-width:700px){.nearby-finder{padding:10px;margin:9px 0}.nearby-mode button{font-size:10px}.nearby-results{max-height:190px}}
+@media (orientation:landscape) and (max-height:650px) and (pointer:coarse){.nearby-results{max-height:130px}.nearby-finder{margin:7px 0;padding:9px}}
+
+/* Stage 2.19: compact, two-option nearby finder; responsive across all viewports */
+.nearby-finder{padding:9px 11px;margin:8px 0;border-radius:10px}
+.nearby-heading{margin-bottom:6px;font-size:12px}
+.nearby-glyph{width:22px;height:22px;font-size:17px;border-radius:6px}
+.nearby-source{display:flex;align-items:center;gap:8px;min-width:0}
+.nearby-source label{font-size:11px;font-weight:650;white-space:nowrap;color:#53657a}
+.nearby-source select{flex:1;min-width:0;max-width:100%;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#183d63;padding:6px 7px;font-size:12px;font-weight:650}
+.nearby-range-head{margin:7px 0 0;font-size:11px}
+.nearby-slider{min-height:23px;margin:0;display:block}
+.nearby-range-ends{margin:0}
+.nearby-find{margin-top:7px;padding:8px 10px}
+.nearby-status{margin-top:6px}
+.nearby-place-row{margin-top:7px}
+.nearby-place-input input{width:100%;font-size:16px;padding:7px 8px}
+.nearby-hint{font-size:10px;line-height:1.4;color:#64748b;margin:4px 0 0}
+/* Results are part of the sidebar's single scroll area, not another touch scroller. */
+.nearby-results{max-height:none;overflow:visible;overscroll-behavior:auto}
+@media (orientation:landscape) and (max-height:650px) and (pointer:coarse){.nearby-results{max-height:none;overflow:visible}.nearby-finder{padding:7px 9px}}
+
+/* Stage 2.20: both finder modes always visible; no dropdown. */
+.nearby-source{display:flex;align-items:center;gap:8px;min-width:0}
+.nearby-source-label{font-size:11px;font-weight:650;white-space:nowrap;color:#53657a}
+.nearby-modes{display:flex;flex:1;min-width:0;gap:3px;padding:3px;background:#edf3fa;border:1px solid #dce6f2;border-radius:9px}
+.nearby-mode{flex:1;min-width:0;border:0;border-radius:6px;background:transparent;color:#43576c;font-size:11px;font-weight:700;line-height:1.2;padding:7px 5px;cursor:pointer;white-space:normal;min-height:34px}
+.nearby-mode.is-active{background:#fff;color:#075b91;box-shadow:0 1px 4px #1235}
+.nearby-mode:focus-visible{outline:2px solid #1684c5;outline-offset:2px}
+@media(max-width:700px){.nearby-source{gap:6px}.nearby-source-label{font-size:10px}.nearby-mode{font-size:10px;padding:6px 3px}}
+
+/* Stage 2.21: town search needs no radius slider. */
+.nearby-radius-controls[hidden]{display:none!important}
+
+
+/* Stage 2.22: responsive placement; one finder, relocated instead of duplicated. */
+.nearby-finder{box-sizing:border-box;min-width:0}
+.nearby-desktop-host{position:absolute;top:14px;right:14px;z-index:810;display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none;max-height:calc(100dvh - 28px)}
+.nearby-desktop-host[hidden]{display:none!important}
+.nearby-launcher{pointer-events:auto;display:grid;place-items:center;width:39px;height:39px;padding:0;border:1px solid #c6d7e6;border-radius:12px;background:#fff;color:#086caa;font-size:27px;line-height:1;cursor:pointer;box-shadow:0 2px 12px #10233a25}
+.nearby-launcher:hover,.nearby-launcher:focus-visible{background:#eaf6ff;outline-offset:2px}
+.nearby-desktop-slot{display:none;pointer-events:auto;width:min(325px,calc(100vw - 42px));max-height:calc(100dvh - 76px);overflow-y:auto;overscroll-behavior:contain;border-radius:13px;background:#fff;box-shadow:0 9px 30px #10233a30;-webkit-overflow-scrolling:touch}
+.nearby-desktop-host.is-open .nearby-desktop-slot{display:block}
+.nearby-desktop-slot .nearby-finder{margin:0;border-radius:13px;padding:12px}
+.nearby-desktop-slot .nearby-results{max-height:none;overflow:visible}
+.nearby-mobile-slot{display:block;min-width:0;padding:0 12px 8px}
+.nearby-mobile-slot .nearby-finder{margin:8px 0}
+.nearby-return{display:block;width:100%;text-align:left;border:0;background:#e9f4ff;color:#075b91;border-radius:7px;padding:8px 10px;margin:0 0 9px;font-size:12px;font-weight:750;cursor:pointer}
+.nearby-return[hidden]{display:none!important}
+.nearby-return:hover{background:#d7ecff}
+@media(min-width:901px){.nearby-mobile-slot{display:none!important}}
+@media(max-width:900px){.nearby-desktop-host{display:none!important}.nearby-mobile-slot{display:block!important}}
+
+/* Stage 2.23: exploration markers and list state; consistent across all viewports. */
+.nearby-legend{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:2px 0 8px;font-size:10.5px;color:#43566b}
+.nearby-legend[hidden]{display:none!important}
+.nearby-legend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.nearby-legend i{display:inline-block;width:11px;height:11px;flex:none;border-radius:50%}
+.legend-origin{background:#e08a16;border:2px solid #fff;box-shadow:0 0 0 1px #9a5808}
+.legend-nearby{background:#0369a1;border:2px solid #67e8f9;box-shadow:0 0 5px #38bdf8}
+.legend-current{background:#7c3aed;border:3px double #fff;box-shadow:0 0 0 1px #7c3aed}
+.nearby-result.is-viewing{background:#f3edff;border-left:3px solid #7c3aed;padding-left:8px}
+.nearby-result.is-viewing strong::after{content:' · Viewing';color:#6d28d9;font-size:10px;font-weight:700}
+.nearby-origin-marker{filter:drop-shadow(0 0 4px #e08a16)}
+.nearby-viewing-marker{filter:drop-shadow(0 0 5px #7c3aed)}
+
+/* Stage 2.26: accessible, compact town suggestions */
+.nearby-place-input{position:relative;min-width:0}
+.nearby-suggestions{position:absolute;z-index:1200;top:calc(100% + 4px);left:0;right:0;max-height:min(230px,42dvh);overflow-y:auto;overscroll-behavior:contain;background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 8px 25px #102b4b30}
+.nearby-suggestion{display:block;width:100%;padding:10px 12px;border:0;border-bottom:1px solid #edf2f7;background:#fff;color:#172c42;text-align:left;font:inherit;font-size:13px;line-height:1.4;cursor:pointer;white-space:normal}
+.nearby-suggestion:last-child{border-bottom:0}
+.nearby-suggestion:hover,.nearby-suggestion:focus-visible{background:#e8f4ff;outline:2px solid #3b82f6;outline-offset:-2px}
+.nearby-finder [hidden]{display:none!important}
+.nearby-place-row .nearby-range-head{margin-top:10px}
+.nearby-place-row .nearby-slider{width:100%;touch-action:pan-y}
+@media(max-width:900px){.nearby-suggestions{max-height:min(190px,34dvh)}.nearby-suggestion{min-height:42px}}
+.nearby-place-input{display:block}
+.nearby-place-input input{display:block;width:100%;box-sizing:border-box}
+.nearby-suggestions{box-sizing:border-box}
+
+/* Stage 2.27: site-radius slider starts visibly inactive until adjusted. */
+.nearby-radius-controls.is-inactive .nearby-range-head output{color:#718096;background:#edf1f5;border-radius:6px;padding:2px 7px;font-weight:650}
+.nearby-radius-controls.is-inactive .nearby-slider{accent-color:#94a3b8;opacity:.8}
+.nearby-radius-controls:not(.is-inactive) .nearby-slider{accent-color:#0284c7;opacity:1}
+.nearby-radius-controls:not(.is-inactive) .nearby-range-head output{color:#0369a1;font-weight:800}
