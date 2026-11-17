@@ -416,13 +416,6 @@ html,body{height:100%;overflow:hidden}
 @media(max-width:900px){.nearby-desktop-host{display:none!important}.nearby-mobile-slot{display:block!important}}
 
 /* Stage 2.23: exploration markers and list state; consistent across all viewports. */
-.nearby-legend{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:2px 0 8px;font-size:10.5px;color:#43566b}
-.nearby-legend[hidden]{display:none!important}
-.nearby-legend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.nearby-legend i{display:inline-block;width:11px;height:11px;flex:none;border-radius:50%}
-.legend-origin{background:#e08a16;border:2px solid #fff;box-shadow:0 0 0 1px #9a5808}
-.legend-nearby{background:#0369a1;border:2px solid #67e8f9;box-shadow:0 0 5px #38bdf8}
-.legend-current{background:#7c3aed;border:3px double #fff;box-shadow:0 0 0 1px #7c3aed}
 .nearby-result.is-viewing{background:#f3edff;border-left:3px solid #7c3aed;padding-left:8px}
 .nearby-result.is-viewing strong::after{content:' · Viewing';color:#6d28d9;font-size:10px;font-weight:700}
 .nearby-origin-marker{filter:drop-shadow(0 0 4px #e08a16)}
@@ -447,3 +440,21 @@ html,body{height:100%;overflow:hidden}
 .nearby-radius-controls.is-inactive .nearby-slider{accent-color:#94a3b8;opacity:.8}
 .nearby-radius-controls:not(.is-inactive) .nearby-slider{accent-color:#0284c7;opacity:1}
 .nearby-radius-controls:not(.is-inactive) .nearby-range-head output{color:#0369a1;font-weight:800}
+
+/* Neutral carrier labels: no carrier-specific panel or result tint. */
+.carrier-badge{display:inline-flex;align-items:center;width:max-content;max-width:100%;font-size:10px;font-weight:750;line-height:1.3;border-radius:5px;padding:3px 7px;border:1px solid #d5dce5;background:#f4f6f8;color:#344054;white-space:nowrap}
+.site-result .carrier-badge{margin:4px 0;display:flex}
+.nearby-result .carrier-badge{margin:3px 0}
+
+/* Compact Rogers-only site measurements immediately below coordinates. */
+.rogers-dimensions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 15px;gap:12px}
+.rogers-dimension{display:flex;flex-direction:column;min-width:0;gap:3px}
+.rogers-dimension-label{font-size:12px;font-weight:700;color:#526174}
+.rogers-dimension-value{font-size:14px;font-weight:600;color:#1e293b;overflow-wrap:anywhere}
+
+/* AZM prototype identity: typography only; no logo asset. */
+.azm-wordmark{display:inline-block;font-family:Arial,Helvetica,sans-serif;font-weight:900;font-size:clamp(32px,3.5vw,44px);line-height:1;letter-spacing:-.095em;color:#172c42;padding-right:.12em;white-space:nowrap}
+.azm-period{color:#2683c6;letter-spacing:0}
+/* Small carrier codes, no tint on the surrounding panel or result. */
+.carrier-badge.carrier-rogers{background:#fff0ee;color:#a3231a;border-color:#f0c5c1}
+.carrier-badge.carrier-telus{background:#edf5ff;color:#235e96;border-color:#c5dbf2}

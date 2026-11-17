@@ -2,7 +2,10 @@
 const map=L.map('map',{preferCanvas:true,zoomSnap:0,zoomDelta:0.5}).setView([53.5,-117],5);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
 const q=document.getElementById('q'),results=document.getElementById('results'),status=document.getElementById('status'),detail=document.getElementById('detail');
-const files=['data/BC.geojson','data/AB.geojson','data/SK.geojson'];
+const files=['data/BC_TELUS.geojson','data/AB_TELUS.geojson','data/SK_TELUS.geojson','data/BC_Rogers.geojson','data/AB_Rogers.geojson'];
+const carrierOf=s=>String(s?.properties?.Carrier||'TELUS').toLowerCase()==='rogers'?'Rogers':'TELUS';
+const carrierColor=s=>carrierOf(s)==='Rogers'?'#DA291C':'#4B8BCE';
+function carrierBadge(s){const badge=document.createElement('span');badge.className='carrier-badge '+(carrierOf(s)==='Rogers'?'carrier-rogers':'carrier-telus');badge.textContent=carrierOf(s)==='Rogers'?'SR':'ST';badge.title=carrierOf(s);badge.setAttribute('aria-label',carrierOf(s));return badge}
 let sites=[],selected=null,matches=[],activeIndex=-1;
 const provinceEnabled=()=>true;
 // Spatial grid: avoids checking every site every time the map moves.
@@ -32,7 +35,7 @@ function initializePreview(){
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
     maxZoom:19,attribution:'&copy; OpenStreetMap contributors'
   }).addTo(previewMap);
-  L.circleMarker([lat,lon],{radius:9,color:'#b45309',fillColor:'#f59e0b',fillOpacity:1,weight:3}).addTo(previewMap);
+  L.circleMarker([lat,lon],{radius:9,color:carrierColor(selected),fillColor:carrierColor(selected),fillOpacity:1,weight:3}).addTo(previewMap);
   requestAnimationFrame(()=>previewMap?.invalidateSize({pan:false}));
 }
 function updatePreviewLayout(){
@@ -123,7 +126,20 @@ function coordinatesCard(parent,coordinates){
   value.addEventListener('click',()=>copyValue(coordinates,value));value.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();copyValue(coordinates,value)}});
   row.append(value,copyIcon(coordinates,'Copy coordinates'));section.append(row);parent.append(section);
 }
-function contactsCard(parent,raw){
+function rogersDimensions(parent,properties){
+  const fields=[['Elevation (m)',properties['Elevation (m)']],['Tower Height (m)',properties['Tower Height (m)']]]
+    .filter(([,value])=>clean(value));
+  if(!fields.length)return;
+  const section=document.createElement('section');section.className='detail-card rogers-dimensions';
+  for(const [label,value] of fields){
+    const item=document.createElement('div');item.className='rogers-dimension';
+    const title=document.createElement('span');title.className='rogers-dimension-label';title.textContent=label;
+    const number=document.createElement('span');number.className='rogers-dimension-value';number.textContent=clean(value);
+    item.append(title,number);section.append(item);
+  }
+  parent.append(section);
+}
+function contactsCard(parent,raw,primeTech){
   if(!clean(raw))return;
   const section=document.createElement('section');section.className='detail-card contacts-card';
   const heading=document.createElement('div');heading.className='static-heading section-heading';
@@ -133,7 +149,10 @@ function contactsCard(parent,raw){
   // Display the original contact text unchanged, preserving dates and context.
   const emailRe=/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
   const phoneRe=/(?<![\w@])(?:\+?1[\s.\-]?)?(?:\(\d{3}\)|\d{3})[\s.\-]?\d{3}[\s.\-]?\d{4}(?:\s*(?:ext\.?|x|extension)\s*\d{1,6})?(?![\w@])/gi;
+  const prime=clean(primeTech);
+  const primeNormalized=prime.replace(/\s+/g,' ').trim().toLowerCase();
   clean(raw).split(/\r?\n/).forEach(line=>{
+    if(primeNormalized && line.replace(/\s+/g,' ').trim().toLowerCase()===primeNormalized)line='Prime Tech: '+line;
     if(!line.trim()){const gap=document.createElement('div');gap.className='contact-gap';body.append(gap);return}
     const row=document.createElement('div');row.className='contact-row';
     const label=document.createElement('span');label.className='contact-text';label.textContent=line;row.append(label);
@@ -152,6 +171,17 @@ function contactsCard(parent,raw){
     body.append(row);
   });section.append(body);parent.append(section);
 }
+// Always show the beginning of the newly selected site's details.
+// Measure relative to the sidebar scroll container, not offsetTop (which
+// depends on positioned ancestors and can leave the panel mid-content).
+function resetSelectedSiteScroll(){
+  requestAnimationFrame(()=>{
+    if(isPinned){sidebarElement.scrollTop=0;return;}
+    const sidebarTop=sidebarElement.getBoundingClientRect().top;
+    const detailTop=detail.getBoundingClientRect().top;
+    sidebarElement.scrollTop=Math.max(0,sidebarElement.scrollTop+detailTop-sidebarTop-12);
+  });
+}
 function choose(s){
   destroyPreview();
   selected=s;const p=s.properties,[lon,lat]=s.geometry.coordinates;
@@ -161,7 +191,7 @@ function choose(s){
   pinnedSite.replaceChildren();
   detail.replaceChildren();
   const head=document.createElement('section');head.className='site-head';
-  const idRow=document.createElement('div');idRow.className='identity-row identity-primary';const id=document.createElement('div');id.className='site-id';id.textContent=idOf(s);idRow.append(id,copyIcon(idOf(s),'Copy site code'));const structure=clean(p['Antenna Structure']);const structureLabel=document.createElement('span');structureLabel.className='structure-badge'+(structure?'':' structure-unspecified');structureLabel.textContent=structure||'Not specified';structureLabel.title='Antenna Structure';idRow.append(structureLabel);head.append(idRow);
+  const idRow=document.createElement('div');idRow.className='identity-row identity-primary';const id=document.createElement('div');id.className='site-id';id.textContent=idOf(s);idRow.append(id,copyIcon(idOf(s),'Copy site code'));const structure=clean(p['Antenna Structure']);const structureLabel=document.createElement('span');structureLabel.className='structure-badge'+(structure?'':' structure-unspecified');structureLabel.textContent=structure||'Not specified';structureLabel.title='Antenna Structure';idRow.append(structureLabel,carrierBadge(s));head.append(idRow);
   const nameRow=document.createElement('div');nameRow.className='identity-row';const h=document.createElement('h2');h.textContent=clean(p['Site Name'])||'Unnamed site';nameRow.append(h);if(clean(p['Site Name']))nameRow.append(copyIcon(clean(p['Site Name']),'Copy site name'));head.append(nameRow);
   if(clean(p['Site Address'])){const address=document.createElement('div');address.className='address';address.textContent=clean(p['Site Address']);const addressRow=document.createElement('div');addressRow.className='identity-row';addressRow.append(address,copyIcon(clean(p['Site Address']),'Copy site address'));head.append(addressRow)}
   addSitePreview(head,lat,lon,idOf(s));
@@ -173,18 +203,22 @@ function choose(s){
   requestAnimationFrame(initializePreview);
   const coords=clean(p['GPS Coordinates'])||lat+', '+lon;
   coordinatesCard(detail,coords);
+  if(carrierOf(s)==='Rogers')rogersDimensions(detail,p);
   card(detail,'Site Information & Notes',p['Site Info / Notes'],true);
-  contactsCard(detail,p['Useful Contact Info']);
+  contactsCard(detail,p['Useful Contact Info'],carrierOf(s)==='Rogers'?p['Prime Tech']:'');
   const standard=new Set(['Site ID','Site Name','Site Address','Site Info / Notes','Useful Contact Info','GPS Coordinates','Open in Google Maps','Antenna Structure','name','description','_umap_options']);
+  const rogersHidden=new Set(['Carrier','Province','Status','Prime Tech','Coordinate Source','Source PDF','Source Pages','Elevation (m)','Tower Height (m)']);
   for(const [key,value] of Object.entries(p)){
-    if(standard.has(key)||key.startsWith('_')||value==null||typeof value==='object')continue;
+    if(standard.has(key)||(carrierOf(s)==='Rogers'&&rogersHidden.has(key))||key.startsWith('_')||value==null||typeof value==='object')continue;
     card(detail,key,value,false);
   }
   const live=document.createElement('div');live.id='copyStatus';live.className='sr-only';live.setAttribute('role','status');live.setAttribute('aria-live','polite');detail.append(live);
   applyPin();
+  resetSelectedSiteScroll();
   if(workspace.classList.contains('sidebar-collapsed'))setSidebarCollapsed(false);
-  // Nearby exploration is navigation, not a new search: preserve the map viewport.
-  if(!nearbyNavigating)map.flyTo([lat,lon],15,{duration:.65});
+  // Every site selection, including nearby results and Back to original, centers the map.
+  map.stop();
+  map.flyTo([lat,lon],15,{duration:.65});
   renderMarkers();
   if(typeof updateNearbyReturn==='function')updateNearbyReturn();
   // Nearby search results remain anchored to the original site until explicitly cleared.
@@ -196,7 +230,7 @@ function renderMarkers(){
   markers.clearLayers();
   if(selected && provinceEnabled(selected) && !nearbyActive){
     const [lon,lat]=selected.geometry.coordinates;
-    L.circleMarker([lat,lon],{radius:10,color:'#b45309',fillColor:'#f59e0b',fillOpacity:1,weight:3})
+    L.circleMarker([lat,lon],{radius:10,color:carrierColor(selected),fillColor:carrierColor(selected),fillOpacity:1,weight:3})
       .bindTooltip('Selected · '+idOf(selected)).addTo(markers);
   }
   renderNearbyHighlights();
@@ -231,9 +265,9 @@ function search(){
   matches=scored.slice(0,30).map(x=>x.s);
   status.textContent=scored.length?`${scored.length.toLocaleString()} matching sites${scored.length>30?' · Showing first 30':''}`:'No matching sites';
   matches.forEach((s,i)=>{const p=s.properties,b=document.createElement('button');b.type='button';b.className='site-result';
-    const name=document.createElement('strong');name.textContent=idOf(s)+' — '+clean(p['Site Name']);b.append(name);
+    const name=document.createElement('strong');name.textContent=idOf(s)+' — '+clean(p['Site Name']);b.append(name,carrierBadge(s));
     if(clean(p['Site Address'])){const address=document.createElement('span');address.className='result-address';address.textContent=clean(p['Site Address']);b.append(address)}
-    b.setAttribute('role','option');b.setAttribute('aria-selected','false');b.addEventListener('click',()=>{q.blur();endNearbyExploration();choose(s);requestAnimationFrame(()=>{sidebarElement.scrollTop=isPinned?0:Math.max(0,detail.offsetTop-12)})});results.append(b);
+    b.setAttribute('role','option');b.setAttribute('aria-selected','false');b.addEventListener('click',()=>{q.blur();endNearbyExploration();choose(s)});results.append(b);
   });
 }
 q.setAttribute('autocomplete','off');q.setAttribute('aria-label','Search by Site ID, site name or address');
@@ -280,19 +314,15 @@ const nearbyMobileSlot=document.getElementById('nearbyMobileSlot');
 const nearbyToggle=document.getElementById('nearbyToggle');
 const nearbyDesktopHost=document.getElementById('nearbyDesktopHost');
 const nearbyMobileQuery=window.matchMedia('(max-width:900px)');
-let nearbyPanelOpen=false, nearbyOriginalSite=null, nearbyNavigating=false;
+let nearbyPanelOpen=false, nearbyOriginalSite=null;
 // A search starts from the selected site only when Find is explicitly pressed.
 // Selecting a result never reruns a search or changes the session anchor.
 const nearbyReturn=document.createElement('button');
 nearbyReturn.type='button';nearbyReturn.className='nearby-return';nearbyReturn.hidden=true;
 nearbyFinder.insertBefore(nearbyReturn,nearbyFinder.querySelector('.nearby-heading'));
-const nearbyLegend=document.createElement('div');nearbyLegend.className='nearby-legend';nearbyLegend.hidden=true;
-nearbyLegend.innerHTML='<span><i class="legend-origin" aria-hidden="true"></i>Original</span><span><i class="legend-nearby" aria-hidden="true"></i>Nearby</span><span><i class="legend-current" aria-hidden="true"></i>Viewing</span>';
-nearbyFinder.insertBefore(nearbyLegend,nearbyFinder.querySelector('.nearby-heading').nextSibling);
 function updateNearbyReturn(){
  const show=Boolean(nearbyActive && nearbyOriginalSite && selected!==nearbyOriginalSite);
  nearbyReturn.hidden=!show;
- nearbyLegend.hidden=!nearbyActive;
  if(nearbyOriginalSite){
   const id=idOf(nearbyOriginalSite);
   nearbyReturn.textContent='← Back to original · '+id;
@@ -307,9 +337,9 @@ function updateNearbyReturn(){
 }
 nearbyReturn.addEventListener('click',()=>{
  if(!nearbyOriginalSite)return;
- nearbyNavigating=true;choose(nearbyOriginalSite);nearbyNavigating=false;
+ choose(nearbyOriginalSite);
  updateNearbyReturn();
- if(nearbyMobileQuery.matches)requestAnimationFrame(()=>{sidebarElement.scrollTop=Math.max(0,detail.offsetTop-12)});
+
 });
 function setNearbyPanelOpen(open){
  nearbyPanelOpen=Boolean(open);
@@ -392,13 +422,9 @@ function endNearbyExploration(){
 
 function selectNearbyResult(site){
  // Navigation only: retain the anchor, results, radius and highlights.
- nearbyNavigating=true;
  choose(site);
- nearbyNavigating=false;
  updateNearbyReturn();
- if(nearbyMobileQuery.matches){
-   requestAnimationFrame(()=>{sidebarElement.scrollTop=Math.max(0,detail.offsetTop-12)});
- }
+
 }
 function renderNearbyHighlights(){
  nearbyHighlightLayer.clearLayers();if(!nearbyActive)return;
@@ -406,12 +432,12 @@ function renderNearbyHighlights(){
  for(const item of nearbyFound){
   const s=item.s;if(s===nearbyOriginalSite)continue;
   const [lon,lat]=s.geometry.coordinates,viewing=s===selected;
-  L.circleMarker([lat,lon],{radius:viewing?19:15,color:viewing?'#7c3aed':'#0ea5e9',weight:0,fillColor:viewing?'#a78bfa':'#38bdf8',fillOpacity:.20,interactive:false}).addTo(nearbyHighlightLayer);
-  L.circleMarker([lat,lon],{radius:viewing?11:8,color:viewing?'#fff':'#67e8f9',weight:viewing?4:2.5,fillColor:viewing?'#7c3aed':'#0369a1',fillOpacity:1,className:viewing?'nearby-viewing-marker':'nearby-glow'}).bindTooltip((viewing?'Viewing · ':'Nearby · ')+idOf(s)).on('click',()=>selectNearbyResult(s)).addTo(nearbyHighlightLayer);
+  L.circleMarker([lat,lon],{radius:viewing?19:15,color:carrierColor(s),weight:0,fillColor:carrierColor(s),fillOpacity:.20,interactive:false}).addTo(nearbyHighlightLayer);
+  L.circleMarker([lat,lon],{radius:viewing?11:8,color:viewing?'#fff':carrierColor(s),weight:viewing?4:2.5,fillColor:carrierColor(s),fillOpacity:1,className:viewing?'nearby-viewing-marker':'nearby-glow'}).bindTooltip((viewing?'Viewing · ':'Nearby · ')+carrierOf(s)+' · '+idOf(s)).on('click',()=>selectNearbyResult(s)).addTo(nearbyHighlightLayer);
  }
  // The anchor remains visible, even if the technician is viewing another result.
  if(nearbyOriginalSite){const [lon,lat]=nearbyOriginalSite.geometry.coordinates;
-  L.circleMarker([lat,lon],{radius:12,color:'#fff',weight:3,fillColor:'#e08a16',fillOpacity:1,className:'nearby-origin-marker'}).bindTooltip('Original · '+idOf(nearbyOriginalSite)).on('click',()=>selectNearbyResult(nearbyOriginalSite)).addTo(nearbyHighlightLayer);
+  L.circleMarker([lat,lon],{radius:12,color:'#fff',weight:3,fillColor:carrierColor(nearbyOriginalSite),fillOpacity:1,className:'nearby-origin-marker'}).bindTooltip('Original · '+carrierOf(nearbyOriginalSite)+' · '+idOf(nearbyOriginalSite)).on('click',()=>selectNearbyResult(nearbyOriginalSite)).addTo(nearbyHighlightLayer);
   L.circleMarker([lat,lon],{radius:4,color:'#7c3900',weight:0,fillColor:'#fff',fillOpacity:1,interactive:false}).addTo(nearbyHighlightLayer);
  }
 }
