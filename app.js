@@ -171,6 +171,282 @@ function contactsCard(parent,raw,primeTech){
     body.append(row);
   });section.append(body);parent.append(section);
 }
+
+// Site update submissions: public site key only. Never put the Turnstile secret in client code.
+// GitHub-controlled frontend switch; fail closed if configuration is unavailable.
+let azmSiteUpdatesEnabled = false;
+async function loadAzmSiteUpdateConfig() {
+  try {
+    const response = await fetch('config.json', { cache: 'no-store' });
+    if (!response.ok) throw Error('Configuration unavailable');
+    const config = await response.json();
+    azmSiteUpdatesEnabled = config.siteUpdatesEnabled === true;
+  } catch (error) {
+    azmSiteUpdatesEnabled = false;
+    console.warn('Site updates disabled: configuration could not be loaded.', error);
+  }
+  if (!azmSiteUpdatesEnabled) updateDraft = null;
+  if (selected) choose(selected);
+}
+const AZM_UPDATE_ENDPOINT = 'https://arkclxdnknhcybganauj.supabase.co/functions/v1/submit-site-update';
+const AZM_TURNSTILE_SITE_KEY = '0x4AAAAAAGFfIzZUSa6BY0z6';
+let azmTurnstileLoader = null;
+function loadAzmTurnstile() {
+  if (window.turnstile) return Promise.resolve(window.turnstile);
+  if (azmTurnstileLoader) return azmTurnstileLoader;
+  azmTurnstileLoader = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.onload = () => window.turnstile ? resolve(window.turnstile) : reject(Error('Verification could not load.'));
+    script.onerror = () => reject(Error('Verification could not load. Check your connection.'));
+    document.head.append(script);
+  }).catch(error => { azmTurnstileLoader = null; throw error; });
+  return azmTurnstileLoader;
+}
+function azmProvince(site) {
+  const explicit = String(site.properties.Province || '').trim().toUpperCase();
+  if (['BC', 'AB', 'SK'].includes(explicit)) return explicit;
+  return idOf(site).slice(0, 2).toUpperCase();
+}
+function azmSubmissionChanges(changes) {
+  return changes.map(change => ({
+    field_name: change.field,
+    action: change.action,
+    original_value: change.action === 'add' ? null : change.oldValue,
+    proposed_value: change.action === 'remove' ? null : change.newValue
+  }));
+}
+
+// Site update proposals are saved only after server verification and approval.
+let updateDraft=null;
+function updateButton(label,handler,variant=''){
+  const button=document.createElement('button');button.type='button';
+  button.className='azm-edit-btn '+variant;button.textContent=label;
+  button.addEventListener('click',handler);return button;
+}
+function updateKey(field,index){return field+'::'+(index===null?'field':index)}
+function updateChanges(){
+  if(!updateDraft)return;
+  updateDraft.changes=new Map();
+  for(const entry of updateDraft.entries){
+    const value=entry.input.value;
+    if(value===entry.original)continue;
+    // Empty new entries do not count as changes.
+    if(entry.original==='' && value.trim()==='')continue;
+    updateDraft.changes.set(updateKey(entry.field,entry.index),{
+      field:entry.field,index:entry.index,oldValue:entry.original,newValue:value,
+      action:entry.original===''?'add':value.trim()===''?'remove':'replace'
+    });
+  }
+  if(updateDraft.submitButton)updateDraft.submitButton.disabled=updateDraft.changes.size===0;
+}
+function startSiteEdit(){
+  if(!selected || !azmSiteUpdatesEnabled)return;
+  updateDraft={site:selected,entries:[],changes:new Map(),review:false,name:'',submitButton:null};
+  renderUpdateMode();
+}
+function discardSiteEdit(){updateDraft=null;choose(selected)}
+function createEditableField(container,field,original,index=null,labelText=''){
+  const wrap=document.createElement('div');wrap.className='azm-live-field';
+  if(labelText){const label=document.createElement('label');label.className='azm-live-label';label.textContent=labelText;wrap.append(label)}
+  const input=document.createElement('textarea');input.className='azm-edit-input azm-live-input';
+  input.rows=field==='Site Info / Notes'?5:field==='Useful Contact Info'?2:2;
+  input.value=original;input.placeholder=field==='Useful Contact Info'?'Enter contact details':'Enter information';
+  input.setAttribute('aria-label',labelText||field);
+  wrap.append(input);container.append(wrap);
+  updateDraft.entries.push({field,index,original,input});
+  input.addEventListener('input',updateChanges);
+  return input;
+}
+function addContactField(container,focus=false){
+  const index='new-'+updateDraft.entries.length;
+  const input=createEditableField(container,'Useful Contact Info','',index,'New contact');
+  if(focus)input.focus();
+  return input;
+}
+function renderUpdateMode(){
+  if(!selected||!updateDraft||!azmSiteUpdatesEnabled)return;
+  // Rebuild the existing site presentation once, then replace display content in place.
+  choose(selected);
+  if(!updateDraft||updateDraft.site!==selected)return;
+  updateDraft.entries=[];updateDraft.changes=new Map();updateDraft.submitButton=null;
+  const header=pinnedSite.querySelector('.site-head')||detail.querySelector('.site-head');
+  if(!header)return;
+  detail.querySelectorAll('.azm-improve-section').forEach(node=>node.remove());
+  const notice=document.createElement('p');notice.className='azm-edit-notice azm-live-notice';
+  notice.textContent='Changes require admin approval.';
+  if(updateDraft.review){renderUpdateConfirmation(header,notice);return}
+  // The address is replaced, not repeated beneath its original text.
+  const address=header.querySelector('.address');
+  if(address){
+    const row=address.closest('.identity-row')||address;
+    const container=document.createElement('div');container.className='azm-live-address';
+    createEditableField(container,'Site Address',String(selected.properties['Site Address']||''),null,'Site address');
+    row.replaceWith(container);
+  }else{
+    const container=document.createElement('div');container.className='azm-live-address';
+    createEditableField(container,'Site Address','',null,'Site address');
+    header.append(container);
+  }
+  // Replace the notes content inside its original card.
+  let notes=[...detail.querySelectorAll('details.detail-card')].find(el=>el.querySelector('summary')?.textContent==='Site Information & Notes');
+  if(!notes){notes=document.createElement('details');notes.className='detail-card';notes.open=true;
+    const summary=document.createElement('summary');summary.textContent='Site Information & Notes';notes.append(summary);
+    const contacts=detail.querySelector('.contacts-card');if(contacts)contacts.before(notes);else detail.prepend(notes);
+  }
+  notes.open=true;
+  notes.querySelectorAll(':scope > :not(summary)').forEach(el=>el.remove());
+  const notesBody=document.createElement('div');notesBody.className='azm-live-card-body';
+  createEditableField(notesBody,'Site Info / Notes',String(selected.properties['Site Info / Notes']||''));
+  notes.append(notesBody);
+  // Keep the contact card in its original location, replacing its rows with textareas.
+  let contacts=detail.querySelector('.contacts-card');
+  if(!contacts){contacts=document.createElement('section');contacts.className='detail-card contacts-card';
+    const heading=document.createElement('div');heading.className='static-heading section-heading';
+    const h=document.createElement('h3');h.textContent='Useful Contact Info';heading.append(h);contacts.append(heading);
+    notes.after(contacts);
+  }
+  contacts.querySelectorAll(':scope > :not(.section-heading)').forEach(el=>el.remove());
+  const contactArea=document.createElement('div');contactArea.className='azm-live-contacts';
+  const lines=String(selected.properties['Useful Contact Info']||'').split(/\r?\n/);
+  lines.forEach((line,index)=>{
+    if(line.trim())createEditableField(contactArea,'Useful Contact Info',line,index,'Contact '+(index+1));
+  });
+  const add=updateButton('+ Add Contact',()=>addContactField(contactArea,true));add.classList.add('azm-add-contact');
+  const addRow=document.createElement('div');addRow.className='azm-add-contact-row';addRow.append(add);
+  // Keep the add control in the same normal-flow column as the contact inputs.
+  // This prevents it from drifting into the next site-information section.
+  contactArea.append(addRow);
+  contacts.append(contactArea);
+  // Controls follow the existing site details; no duplicated edit panel.
+  const footer=document.createElement('section');footer.className='azm-live-footer';
+  footer.append(notice);
+  const actions=document.createElement('div');actions.className='azm-edit-footer';
+  const submit=updateButton('Submit',()=>{updateChanges();if(!updateDraft.changes.size)return;
+    updateDraft.review=true;renderUpdateConfirmation(header,notice);},'primary');
+  submit.disabled=true;updateDraft.submitButton=submit;
+  actions.append(updateButton('Cancel',discardSiteEdit),submit);footer.append(actions);detail.append(footer);
+  // Editing is local and does not alter the underlying GeoJSON.
+}
+function renderUpdateConfirmation(header,notice){
+  updateChanges();
+  const draft=updateDraft;
+  const changes=[...draft.changes.values()];
+  const savedEntries=draft.entries;
+  const originalChildren=[...detail.children];
+  for(const node of originalChildren)if(node!==header)node.classList.add('azm-edit-hidden');
+  header.querySelectorAll('.azm-live-address').forEach(el=>el.classList.add('azm-edit-hidden'));
+  const previous=detail.querySelector('.azm-confirm-panel');if(previous)previous.remove();
+  const panel=document.createElement('section');panel.className='azm-edit-panel azm-confirm-panel';
+  const heading=document.createElement('h3');heading.textContent='Confirm changes';panel.append(heading,notice.cloneNode(true));
+  for(const change of changes){
+    const item=document.createElement('div');item.className='azm-review-item';
+    const title=document.createElement('strong');title.textContent=change.field;item.append(title);
+    const before=document.createElement('div');before.className='azm-review-before';before.textContent='Before: '+(change.oldValue||'(empty)');
+    const after=document.createElement('div');after.className='azm-review-after';after.textContent='After: '+(change.newValue.trim()||'(removed)');
+    item.append(before,after);panel.append(item);
+  }
+  const label=document.createElement('label');label.className='azm-name-label';label.textContent='Your name *';
+  const name=document.createElement('input');name.type='text';name.maxLength=120;name.autocomplete='name';
+  name.placeholder='Full name';name.value=draft.name;
+  label.append(name);panel.append(label);
+  const verification=document.createElement('div');verification.className='azm-turnstile';
+  verification.setAttribute('aria-label','Human verification');
+  panel.append(verification);
+  const message=document.createElement('p');message.className='azm-submit-message';
+  message.setAttribute('role','status');message.setAttribute('aria-live','polite');
+  panel.append(message);
+  const footer=document.createElement('div');footer.className='azm-edit-footer';
+  const confirm=updateButton('Confirm & Submit',submit,'primary');
+  const back=updateButton('Back',()=>{
+    if(submitting)return;
+    if(widgetId!==null && window.turnstile)window.turnstile.remove(widgetId);
+    draft.review=false;
+    panel.remove();
+    for(const node of originalChildren)node.classList.remove('azm-edit-hidden');
+    header.querySelectorAll('.azm-live-address').forEach(el=>el.classList.remove('azm-edit-hidden'));
+    draft.entries=savedEntries;updateChanges();
+  });
+  const cancel=updateButton('Cancel',()=>{
+    if(submitting)return;
+    if(widgetId!==null && window.turnstile)window.turnstile.remove(widgetId);
+    discardSiteEdit();
+  });
+  footer.append(back,cancel,confirm);panel.append(footer);
+  detail.prepend(panel);
+  let token='',widgetId=null,submitting=false;
+  const isCurrent=()=>updateDraft===draft && panel.isConnected;
+  function setMessage(text,isError=false){
+    message.textContent=text;
+    message.classList.toggle('is-error',isError);
+  }
+  function syncConfirm(){
+    confirm.disabled=submitting || name.value.trim().length<2 || name.value.trim().length>120 || !token;
+  }
+  name.addEventListener('input',()=>{draft.name=name.value;syncConfirm()});
+  syncConfirm();
+  setMessage('Loading verification…');
+  loadAzmTurnstile().then(turnstile=>{
+    if(!isCurrent())return;
+    setMessage('');
+    widgetId=turnstile.render(verification,{
+      sitekey:AZM_TURNSTILE_SITE_KEY,
+      theme:'auto',
+      size:'flexible',
+      callback(value){token=value;syncConfirm()},
+      'expired-callback'(){token='';syncConfirm();setMessage('Verification expired. Please verify again.',true)},
+      'error-callback'(){token='';syncConfirm();setMessage('Verification unavailable. Please retry.',true)}
+    });
+  }).catch(error=>{if(isCurrent())setMessage(error.message,true)});
+  async function submit(){
+    if(submitting || !token || !isCurrent() || !azmSiteUpdatesEnabled)return;
+    const technicianName=name.value.trim();
+    if(technicianName.length<2 || technicianName.length>120){setMessage('Enter your name (2–120 characters).',true);return}
+    const payload={
+      technician_name:technicianName,
+      carrier:carrierOf(draft.site),
+      province:azmProvince(draft.site),
+      site_code:idOf(draft.site),
+      changes:azmSubmissionChanges(changes),
+      turnstile_token:token
+    };
+    submitting=true;syncConfirm();back.disabled=true;cancel.disabled=true;
+    setMessage('Submitting changes…');
+    try{
+      const response=await fetch(AZM_UPDATE_ENDPOINT,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok || result.success===false){
+        throw Error(result.error || 'Submission failed. Please try again.');
+      }
+      if(!isCurrent())return;
+      if(widgetId!==null && window.turnstile)window.turnstile.remove(widgetId);
+      updateDraft=null;
+      panel.replaceChildren();
+      const success=document.createElement('h3');success.textContent='Submitted for approval';
+      const description=document.createElement('p');
+      description.textContent=changes.length+' proposed change'+(changes.length===1?' has':'s have')+' been sent to the admin. Site information will remain unchanged until approved.';
+      panel.append(success,description);
+      const done=updateButton('Done',()=>choose(selected),'primary');
+      panel.append(done);
+      panel.scrollIntoView({block:'nearest'});
+    }catch(error){
+      if(!isCurrent())return;
+      setMessage(error.message || 'Unable to submit. Please try again.',true);
+      token='';
+      if(widgetId!==null && window.turnstile)window.turnstile.reset(widgetId);
+    }finally{
+      submitting=false;
+      if(isCurrent()){back.disabled=false;cancel.disabled=false;syncConfirm()}
+    }
+  }
+  requestAnimationFrame(()=>{panel.scrollIntoView({block:'nearest'})});
+}
+
 // Always show the beginning of the newly selected site's details.
 // Measure relative to the sidebar scroll container, not offsetTop (which
 // depends on positioned ancestors and can leave the panel mid-content).
@@ -183,6 +459,7 @@ function resetSelectedSiteScroll(){
   });
 }
 function choose(s){
+  if(updateDraft && updateDraft.site!==s)updateDraft=null;
   destroyPreview();
   selected=s;const p=s.properties,[lon,lat]=s.geometry.coordinates;
   q.value=idOf(s);results.replaceChildren();matches=[];activeIndex=-1;
@@ -199,7 +476,8 @@ function choose(s){
   const navigate=document.createElement('a');navigate.className='action primary';
   navigate.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(lat+','+lon);
   navigate.target='_blank';navigate.rel='noopener noreferrer';navigate.textContent='↗ Open in Google Maps';actions.append(navigate);
-  head.append(actions);detail.append(head);
+  head.append(actions);
+  detail.append(head);
   requestAnimationFrame(initializePreview);
   const coords=clean(p['GPS Coordinates'])||lat+', '+lon;
   coordinatesCard(detail,coords);
@@ -211,6 +489,12 @@ function choose(s){
   for(const [key,value] of Object.entries(p)){
     if(standard.has(key)||(carrierOf(s)==='Rogers'&&rogersHidden.has(key))||key.startsWith('_')||value==null||typeof value==='object')continue;
     card(detail,key,value,false);
+  }
+  if (azmSiteUpdatesEnabled) {
+    const improveSection=document.createElement('div');improveSection.className='azm-improve-section';
+    const improve=updateButton('Improve Info',startSiteEdit);
+    improve.classList.add('azm-edit-launch');
+    improveSection.append(improve);detail.append(improveSection);
   }
   const live=document.createElement('div');live.id='copyStatus';live.className='sr-only';live.setAttribute('role','status');live.setAttribute('aria-live','polite');detail.append(live);
   applyPin();
@@ -637,3 +921,5 @@ nearbyPlace.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(
   sites=data.flatMap(d=>d.features).filter(s=>s.geometry?.type==='Point'&&s.geometry.coordinates?.length===2&&s.geometry.coordinates.every(Number.isFinite));
   indexSites();search();renderMarkers();
 }catch(e){status.textContent='Loading error: '+e.message+' — run through a local web server (not file://).';console.error(e)}})();
+
+loadAzmSiteUpdateConfig();
