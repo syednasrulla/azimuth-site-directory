@@ -16,9 +16,9 @@ const FILES: Record<string, string> = {
   'Rogers:BC': 'data/BC_Rogers.geojson',
   'Rogers:AB': 'data/AB_Rogers.geojson',
 };
-const FIELDS = new Set(['Site Address', 'Site Info / Notes', 'Useful Contact Info']);
-const ACTIONS = new Set(['add', 'replace', 'delete']);
-const HEADINGS = ['Site Address', 'Site Info / Notes', 'Useful Contact Info', 'GPS Coordinates'];
+const FIELDS = new Set(['Site Address', 'Site Info / Notes', 'Useful Contact Info', 'Site Special Instructions']);
+const ACTIONS = new Set(['add', 'replace', 'remove']);
+const HEADINGS = ['Site Address', 'Site Info / Notes', 'Useful Contact Info', 'Site Special Instructions', 'GPS Coordinates'];
 
 type RequestRow = {
   id: string; carrier: string; province: string; site_code: string;
@@ -65,17 +65,29 @@ function apply(props: Record<string, unknown>, req: RequestRow): boolean {
     if (original && oldValue.trim() !== original && oldValue.trim() !== incoming) throw Error(`Conflicting existing value for ${req.site_code} / ${req.field_name}`);
     newValue = incoming;
   } else if (req.action === 'add') {
-    if (req.field_name !== 'Useful Contact Info') throw Error(`Add not supported for ${req.field_name}`);
-    if (!incoming) throw Error(`Empty contact in ${req.id}`);
-    // Idempotent on retry: never append the same complete contact block twice.
-    if (oldValue.split(/\n\s*\n/).some(s => s.trim() === incoming) || oldValue.includes(incoming)) return false;
-    newValue = oldValue.trim() ? `${oldValue.trimEnd()}\n\n${incoming}` : incoming;
-  } else {
-    if (req.field_name !== 'Useful Contact Info') throw Error(`Delete not supported for ${req.field_name}`);
-    const target = original || incoming;
-    if (!target) throw Error(`Missing contact to delete in ${req.id}`);
-    if (!oldValue.includes(target)) return false; // Already removed.
-    newValue = oldValue.replace(target, '').replace(/\n{3,}/g, '\n\n').trim();
+    if (!incoming) throw Error(`Empty addition in ${req.id}`);
+    if (req.field_name === 'Useful Contact Info') {
+      // Contacts are additive; avoid duplicating an already published contact.
+      if (oldValue.split(/\n\s*\n/).some(s => s.trim() === incoming) || oldValue.includes(incoming)) return false;
+      newValue = oldValue.trim() ? `${oldValue.trimEnd()}\n\n${incoming}` : incoming;
+    } else {
+      // A blank ordinary text field becomes populated, not appended to.
+      if (oldValue.trim() === incoming) return false;
+      if (oldValue.trim()) throw Error(`Field is no longer empty for ${req.site_code} / ${req.field_name}`);
+      newValue = incoming;
+    }
+  } else { // remove
+    if (req.field_name === 'Useful Contact Info') {
+      const target = original || incoming;
+      if (!target) throw Error(`Missing contact to remove in ${req.id}`);
+      if (!oldValue.includes(target)) return false;
+      newValue = oldValue.replace(target, '').replace(/\n{3,}/g, '\n\n').trim();
+    } else {
+      // Clearing an ordinary text field requires the original value to match.
+      if (!oldValue.trim()) return false;
+      if (!original || oldValue.trim() !== original) throw Error(`Conflicting existing value for ${req.site_code} / ${req.field_name}`);
+      newValue = '';
+    }
   }
   if (oldValue === newValue) return false;
   props[req.field_name] = newValue;

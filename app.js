@@ -251,7 +251,7 @@ function createEditableField(container,field,original,index=null,labelText=''){
   const wrap=document.createElement('div');wrap.className='azm-live-field';
   if(labelText){const label=document.createElement('label');label.className='azm-live-label';label.textContent=labelText;wrap.append(label)}
   const input=document.createElement('textarea');input.className='azm-edit-input azm-live-input';
-  input.rows=field==='Site Info / Notes'?5:field==='Useful Contact Info'?2:2;
+  input.rows=field==='Site Info / Notes'||field==='Site Special Instructions'?5:2;
   input.value=original;input.placeholder=field==='Useful Contact Info'?'Enter contact details':'Enter information';
   input.setAttribute('aria-label',labelText||field);
   wrap.append(input);container.append(wrap);
@@ -300,6 +300,18 @@ function renderUpdateMode(){
   const notesBody=document.createElement('div');notesBody.className='azm-live-card-body';
   createEditableField(notesBody,'Site Info / Notes',String(selected.properties['Site Info / Notes']||''));
   notes.append(notesBody);
+  // Edit Site Special Instructions in its existing card, or create the card if empty.
+  let instructions=[...detail.querySelectorAll('details.detail-card')].find(el=>el.querySelector('summary')?.textContent==='Site Special Instructions');
+  if(!instructions){
+    instructions=document.createElement('details');instructions.className='detail-card';instructions.open=true;
+    const summary=document.createElement('summary');summary.textContent='Site Special Instructions';instructions.append(summary);
+    notes.after(instructions);
+  }
+  instructions.open=true;
+  instructions.querySelectorAll(':scope > :not(summary)').forEach(el=>el.remove());
+  const instructionsBody=document.createElement('div');instructionsBody.className='azm-live-card-body';
+  createEditableField(instructionsBody,'Site Special Instructions',String(selected.properties['Site Special Instructions']||''));
+  instructions.append(instructionsBody);
   // Keep the contact card in its original location, replacing its rows with textareas.
   let contacts=detail.querySelector('.contacts-card');
   if(!contacts){contacts=document.createElement('section');contacts.className='detail-card contacts-card';
