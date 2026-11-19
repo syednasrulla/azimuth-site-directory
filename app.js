@@ -58,6 +58,10 @@ const clean=s=>String(s??'').trim();
 const normalizeId=s=>clean(s).replace(/^([a-z]{2})\s*0*(\d+)$/i,(_,p,n)=>p.toUpperCase()+n.padStart(6,'0'));
 const fold=s=>clean(s).toLocaleLowerCase();
 const idOf=s=>normalizeId(s.properties['Site ID']||s.properties.name||'');
+// A shared link selects a site without changing the map's normal search behaviour.
+const siteLink=id=>{const url=new URL(window.location.href);url.searchParams.set('site',id);return url.href;};
+function shareSite(s){copyValue(siteLink(idOf(s)),document.getElementById('shareSiteLink'));}
+
 const workspace=document.getElementById('workspace');
 // A single scroll container owns the entire sidebar. Pinning moves the actual
 // selected-site card into a direct-child sticky dock (no cloned Leaflet maps).
@@ -479,7 +483,7 @@ function choose(s){
   pinnedSite.replaceChildren();
   detail.replaceChildren();
   const head=document.createElement('section');head.className='site-head';
-  const idRow=document.createElement('div');idRow.className='identity-row identity-primary';const id=document.createElement('div');id.className='site-id';id.textContent=idOf(s);idRow.append(id,copyIcon(idOf(s),'Copy site code'));const structure=clean(p['Antenna Structure']);const structureLabel=document.createElement('span');structureLabel.className='structure-badge'+(structure?'':' structure-unspecified');structureLabel.textContent=structure||'Not specified';structureLabel.title='Antenna Structure';idRow.append(structureLabel,carrierBadge(s));head.append(idRow);
+  const idRow=document.createElement('div');idRow.className='identity-row identity-primary';const id=document.createElement('div');id.className='site-id';id.textContent=idOf(s);idRow.append(id,copyIcon(idOf(s),'Copy site code'));const share=document.createElement('button');share.id='shareSiteLink';share.type='button';share.className='copy-icon';share.title='Copy link to this site';share.setAttribute('aria-label','Copy link to this site');share.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5 15.4 6.5M8.6 13.5 15.4 17.5"/></svg>';share.addEventListener('click',()=>copyValue(siteLink(idOf(s)),share));idRow.append(share);const structure=clean(p['Antenna Structure']);const structureLabel=document.createElement('span');structureLabel.className='structure-badge'+(structure?'':' structure-unspecified');structureLabel.textContent=structure||'Not specified';structureLabel.title='Antenna Structure';idRow.append(structureLabel,carrierBadge(s));head.append(idRow);
   const nameRow=document.createElement('div');nameRow.className='identity-row';const h=document.createElement('h2');h.textContent=clean(p['Site Name'])||'Unnamed site';nameRow.append(h);if(clean(p['Site Name']))nameRow.append(copyIcon(clean(p['Site Name']),'Copy site name'));head.append(nameRow);
   if(clean(p['Site Address'])){const address=document.createElement('div');address.className='address';address.textContent=clean(p['Site Address']);const addressRow=document.createElement('div');addressRow.className='identity-row';addressRow.append(address,copyIcon(clean(p['Site Address']),'Copy site address'));head.append(addressRow)}
   addSitePreview(head,lat,lon,idOf(s));
@@ -1055,6 +1059,8 @@ scheduleSatelliteCheck();
 (async()=>{try{const data=await Promise.all(files.map(async f=>{const r=await fetch(f);if(!r.ok)throw Error('Could not load '+f);return r.json()}));
   sites=data.flatMap(d=>d.features).filter(s=>s.geometry?.type==='Point'&&s.geometry.coordinates?.length===2&&s.geometry.coordinates.every(Number.isFinite));
   indexSites();search();renderMarkers();
+  const linkedId=normalizeId(new URLSearchParams(window.location.search).get('site')||'');
+  if(linkedId){const linkedSite=sites.find(s=>idOf(s)===linkedId);if(linkedSite){choose(linkedSite);const [lon,lat]=linkedSite.geometry.coordinates;map.setView([lat,lon],15);}}
 }catch(e){status.textContent='Loading error: '+e.message+' — run through a local web server (not file://).';console.error(e)}})();
 
 loadAzmSiteUpdateConfig();

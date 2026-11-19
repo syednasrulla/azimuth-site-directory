@@ -9,6 +9,25 @@ const text = (tag, value, className='') => { const el=document.createElement(tag
 const date = value => value ? new Date(value).toLocaleString() : '—';
 let db, currentUser=null, requests=[], busy=false, page=0, totalMatching=0, unpublishedCount=0;
 const PAGE_SIZE=50;
+// Site names come from the same public GeoJSON used by the directory.
+const siteNameFiles=new Map();
+function siteNamesFor(province,carrier){
+  const key=String(province||'').toUpperCase()+'_'+(String(carrier||'').toLowerCase()==='rogers'?'Rogers':'TELUS');
+  if(!/^(BC|AB|SK)_(TELUS|Rogers)$/.test(key))return Promise.resolve(new Map());
+  if(!siteNameFiles.has(key)){
+    siteNameFiles.set(key,fetch('data/'+key+'.geojson').then(r=>{if(!r.ok)throw Error('Site data unavailable');return r.json();}).then(data=>{
+      const names=new Map();for(const feature of data.features||[]){const p=feature.properties||{};const id=String(p['Site ID']||p.name||'').trim().toUpperCase();if(id)names.set(id,String(p['Site Name']||'').trim());}return names;
+    }).catch(()=>new Map()));
+  }
+  return siteNameFiles.get(key);
+}
+function showSiteName(target,request){
+  siteNamesFor(request.province,request.carrier).then(names=>{
+    if(!target.isConnected)return;const name=names.get(String(request.site_code||'').trim().toUpperCase());
+    if(name)target.textContent=name;
+  });
+}
+
 let searchDelay;
 function setBusy(value){busy=value; $('refresh').disabled=value; $('publish').disabled=value || !currentUser || unpublishedCount===0; $('previousPage').disabled=value || page===0; $('nextPage').disabled=value || (page+1)*PAGE_SIZE>=totalMatching; document.querySelectorAll('.decision-row button').forEach(b=>b.disabled=value);}
 async function checkAdmin(user){
@@ -110,7 +129,8 @@ function render(){
     const head=document.createElement('summary');head.className='submission-summary';
     const main=document.createElement('div');main.className='submission-main';
     main.append(text('strong',first.site_code||'Unknown site','submission-site'));
-    main.append(text('span',[first.carrier,first.province].filter(Boolean).join(' · '),'submission-carrier'));
+    const siteName=text('span','','submission-site-name');main.append(siteName);showSiteName(siteName,first);
+    main.append(text('span',String(first.carrier||'').toLowerCase()==='rogers'?'SR':'ST','submission-carrier'));
     const sub=text('div',(first.technician_name||'Unknown technician')+' · '+date(first.submitted_at)+' · '+items.length+' change'+(items.length===1?'':'s'),'submission-meta');
     const heading=document.createElement('div');heading.className='submission-heading';heading.append(main,sub);
     head.append(heading);
