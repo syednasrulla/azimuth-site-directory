@@ -252,15 +252,46 @@ function startSiteEdit(){
 }
 function discardSiteEdit(){updateDraft=null;choose(selected)}
 function createEditableField(container,field,original,index=null,labelText=''){
+  if(!document.getElementById('azm-contact-removal-styles')){
+    const style=document.createElement('style');
+    style.id='azm-contact-removal-styles';
+    style.textContent='\n/* Explicit, reversible contact-removal requests in Improve Info. */\n.azm-contact-edit-controls{display:flex;justify-content:flex-end;margin-top:4px}\n.azm-contact-remove{font-size:12px;min-height:32px;padding:5px 10px;color:#a33a36;background:transparent;border:1px solid #e4c7c5;border-radius:6px}\n.azm-contact-remove:hover,.azm-contact-remove:focus-visible{background:#fff0ef}\n.azm-contact-pending-removal .azm-live-input{opacity:.55;text-decoration:line-through;background:#f5f6f7}\n.azm-contact-pending-removal .azm-contact-remove{color:#17639c;border-color:#bfd5e6}\n.azm-contact-pending-removal .azm-contact-remove:hover,.azm-contact-pending-removal .azm-contact-remove:focus-visible{background:#eaf4fc}\n';
+    document.head.append(style);
+  }
   const wrap=document.createElement('div');wrap.className='azm-live-field';
   if(labelText){const label=document.createElement('label');label.className='azm-live-label';label.textContent=labelText;wrap.append(label)}
   const input=document.createElement('textarea');input.className='azm-edit-input azm-live-input';
   input.rows=field==='Site Info / Notes'||field==='Site Special Instructions'?5:2;
   input.value=original;input.placeholder=field==='Useful Contact Info'?'Enter contact details':'Enter information';
   input.setAttribute('aria-label',labelText||field);
-  wrap.append(input);container.append(wrap);
+  wrap.append(input);
+  if(field==='Useful Contact Info' && original.trim()){
+    const control=updateButton('Remove',()=>{
+      const removing=control.dataset.removing!=='true';
+      control.dataset.removing=String(removing);
+      control.textContent=removing?'Undo':'Remove';
+      control.setAttribute('aria-label',(removing?'Undo removal of ':'Remove ')+(labelText||'contact'));
+      input.value=removing?'':original;
+      input.disabled=removing;
+      wrap.classList.toggle('azm-contact-pending-removal',removing);
+      updateChanges();
+    });
+    control.classList.add('azm-contact-remove');
+    control.setAttribute('aria-label','Remove '+(labelText||'contact'));
+    const controls=document.createElement('div');
+    controls.className='azm-contact-edit-controls';
+    controls.append(control);
+    wrap.append(controls);
+    input.addEventListener('input',()=>{
+      // Editing after an undo keeps the normal replace workflow.
+      if(control.dataset.removing==='true')return;
+      updateChanges();
+    });
+  }else{
+    input.addEventListener('input',updateChanges);
+  }
+  container.append(wrap);
   updateDraft.entries.push({field,index,original,input});
-  input.addEventListener('input',updateChanges);
   return input;
 }
 function addContactField(container,focus=false){
