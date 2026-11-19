@@ -759,7 +759,7 @@ function renderNearbyHighlights(){
   L.circleMarker([lat,lon],{radius:viewing?11:8,color:viewing?'#fff':carrierColor(s),weight:viewing?4:2.5,fillColor:carrierColor(s),fillOpacity:1,className:viewing?'nearby-viewing-marker':'nearby-glow'}).bindTooltip((viewing?'Viewing · ':'Nearby · ')+carrierOf(s)+' · '+idOf(s)).on('click',()=>selectNearbyResult(s)).addTo(nearbyHighlightLayer);
  }
  // The anchor remains visible, even if the technician is viewing another result.
- if(coordinateAnchor){L.circleMarker(coordinateAnchor,{radius:12,color:'#fff',weight:3,fillColor:'#d97706',fillOpacity:1}).bindTooltip('Coordinate search centre').addTo(nearbyHighlightLayer);}
+ // Keep coordinateAnchor for distance calculations and Back, but do not overlay nearby site markers.
  if(nearbyOriginalSite){const [lon,lat]=nearbyOriginalSite.geometry.coordinates;
   L.circleMarker([lat,lon],{radius:12,color:'#fff',weight:3,fillColor:carrierColor(nearbyOriginalSite),fillOpacity:1,className:'nearby-origin-marker'}).bindTooltip('Original · '+carrierOf(nearbyOriginalSite)+' · '+idOf(nearbyOriginalSite)).on('click',()=>selectNearbyResult(nearbyOriginalSite)).addTo(nearbyHighlightLayer);
   L.circleMarker([lat,lon],{radius:4,color:'#7c3900',weight:0,fillColor:'#fff',fillOpacity:1,interactive:false}).addTo(nearbyHighlightLayer);
