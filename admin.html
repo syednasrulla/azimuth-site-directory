@@ -30,11 +30,6 @@
         <div id="submissions" class="submissions"></div>
         <div id="pagination" class="toolbar pagination" hidden><button id="previousPage" class="secondary" type="button">Previous</button><span id="pageInfo" role="status"></span><button id="nextPage" class="secondary" type="button">Next</button></div>
       </section>
-      <section class="publish-panel" aria-labelledby="publishHeading">
-        <div class="publish-copy"><div class="publish-topline"><span class="publish-indicator" aria-hidden="true"></span><h2 id="publishHeading">Ready to publish</h2></div><p><strong id="publishCount">—</strong><span class="publish-count-label"> approved changes waiting</span></p><small>Publishes to the <code>feature/site-updates</code> GitHub branch. Approval alone does not update site data.</small></div>
-        <button id="publish" type="button" disabled>Publish changes</button>
-      </section>
-      <p id="publishMessage" class="message publish-message" role="status" aria-live="polite"></p>
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>

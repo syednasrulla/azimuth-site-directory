@@ -7,7 +7,7 @@ const show = (id, visible) => { $(id).hidden = !visible; };
 const message = (id, text, error=false) => { $(id).textContent=text; $(id).classList.toggle('error',error); };
 const text = (tag, value, className='') => { const el=document.createElement(tag); el.textContent=String(value??''); if(className)el.className=className; return el; };
 const date = value => value ? new Date(value).toLocaleString() : '—';
-let db, currentUser=null, requests=[], busy=false, page=0, totalMatching=0, unpublishedCount=0;
+let db, currentUser=null, requests=[], busy=false, page=0, totalMatching=0;
 const PAGE_SIZE=50;
 // Site names come from the same public GeoJSON used by the directory.
 const siteNameFiles=new Map();
@@ -29,7 +29,7 @@ function showSiteName(target,request){
 }
 
 let searchDelay;
-function setBusy(value){busy=value; $('refresh').disabled=value; $('publish').disabled=value || !currentUser || unpublishedCount===0; $('previousPage').disabled=value || page===0; $('nextPage').disabled=value || (page+1)*PAGE_SIZE>=totalMatching; document.querySelectorAll('.decision-row button').forEach(b=>b.disabled=value);}
+function setBusy(value){busy=value; $('refresh').disabled=value; $('previousPage').disabled=value || page===0; $('nextPage').disabled=value || (page+1)*PAGE_SIZE>=totalMatching; document.querySelectorAll('.decision-row button').forEach(b=>b.disabled=value);}
 async function checkAdmin(user){
   const {data,error}=await db.from('app_roles').select('role').eq('user_id',user.id).eq('role','admin').maybeSingle();
   if(error)throw Error('Unable to verify administrator permissions: '+error.message);
@@ -47,25 +47,22 @@ async function enter(session){
     show('dashboard',true);await loadRequests();
   }catch(err){currentUser=null;show('login',true);message('loginMessage',err.message,true);}
 }
-async function countRequests(status, unpublished=false){
+async function countRequests(status){
   let query=db.from('site_update_requests').select('id',{count:'exact',head:true}).eq('status',status);
-  if(unpublished)query=query.is('published_at',null);
   const {count,error}=await query;
   if(error)throw error;
   return count??0;
 }
 async function loadRequests(){
   if(!currentUser||busy)return;
-  setBusy(true);message('dashboardMessage','Loading requests…');
+  setBusy(true);if(!$('dashboardMessage').textContent || $('dashboardMessage').textContent==='Loading requests…')message('dashboardMessage','Loading requests…');
   try{
-    const [pending,approved,rejected,unpublished]=await Promise.all([
-      countRequests('pending'),countRequests('approved'),countRequests('rejected'),countRequests('approved',true)
+    const [pending,approved,rejected]=await Promise.all([
+      countRequests('pending'),countRequests('approved'),countRequests('rejected')
     ]);
     $('pendingCount').textContent=String(pending);
     $('approvedCount').textContent=String(approved);
     $('rejectedCount').textContent=String(rejected);
-    unpublishedCount=unpublished;
-    $('publishCount').textContent=String(unpublishedCount);
     const status=$('statusFilter').value;
     const site=$('siteFilter').value.trim();
     let query=db.from('site_update_requests')
@@ -77,7 +74,7 @@ async function loadRequests(){
     totalMatching=count??0;
     if(page>0&&page*PAGE_SIZE>=totalMatching){page=Math.max(0,Math.ceil(totalMatching/PAGE_SIZE)-1);return await reloadAfterPageCorrection();}
     requests=data||[];
-    message('dashboardMessage','');
+    if($('dashboardMessage').textContent==='Loading requests…')message('dashboardMessage','');
     render();
     updatePagination();
   }catch(err){message('dashboardMessage','Unable to load requests: '+errorText(err),true);$('submissions').replaceChildren();}
@@ -159,47 +156,48 @@ function render(){
       }else{
         card.append(text('p',r.status.charAt(0).toUpperCase()+r.status.slice(1)+' · '+date(r.reviewed_at),'decision-note'));
         if(r.published_at)card.append(text('p','Published '+date(r.published_at),'decision-note'));
-        else if(r.status==='approved')card.append(text('p','Awaiting publication','decision-note'));
+        else if(r.status==='approved'){
+          const retry=text('button','Retry publishing','copy-id');retry.type='button';retry.disabled=busy;retry.addEventListener('click',()=>publishOne(r));
+          card.append(text('p','Not published','decision-note'),retry);
+        }
       }
       list.append(card);
     }
     body.append(list);section.append(body);root.append(section);
   }
 }
+async function publishRequest(id){
+  const {data,error}=await db.functions.invoke('publish-approved-updates',{body:{request_id:id}});
+  if(error){
+    let detail=errorText(error);
+    if(error.context?.json){try{const payload=await error.context.json();detail=errorText(payload.error||payload.message||payload);}catch{}}
+    throw Error(detail);
+  }
+  if(data?.error)throw Error(errorText(data.error));
+  if(data?.published!==1)throw Error('Publication was not confirmed. Check the request before retrying.');
+}
+async function publishOne(r){
+  if(busy||!currentUser||r.status!=='approved'||r.published_at)return;
+  setBusy(true);message('dashboardMessage','Publishing '+r.site_code+'…');
+  try{await publishRequest(r.id);message('dashboardMessage','Published to feature/site-updates.');}
+  catch(err){message('dashboardMessage','Publishing failed: '+errorText(err),true);}
+  finally{setBusy(false);await loadRequests();}
+}
 async function review(r,decision){
   if(busy||!currentUser||r.status!=='pending')return;
-  const label=decision==='approved'?'approve':'reject';
-  if(!window.confirm('Are you sure you want to '+label+' this individual change for '+r.site_code+'?\n\n'+r.field_name+'\n\nThis will record your decision but will not publish GeoJSON.'))return;
-  setBusy(true);message('dashboardMessage','Saving decision…');
+  const approving=decision==='approved';
+  if(!window.confirm('Are you sure you want to '+(approving?'approve and publish':'reject')+' this change for '+r.site_code+'?\n\n'+r.field_name))return;
+  setBusy(true);message('dashboardMessage',approving?'Approving and publishing…':'Rejecting…');
   try{
     const {error}=await db.rpc('review_site_update',{p_request_id:r.id,p_decision:decision});
     if(error)throw error;
-    message('dashboardMessage','Decision saved. The directory has not been published.');
-  }catch(err){message('dashboardMessage','Decision failed: '+err.message,true);setBusy(false);return;}
-  setBusy(false);await loadRequests();
-}
-async function publishApproved(){
-  if(busy||!currentUser)return;
-  const count=unpublishedCount;
-  if(!count){message('publishMessage','No approved requests awaiting publication.');return;}
-  const confirmed=window.confirm('Publish ALL unpublished approved requests (not just the filtered site) to feature/site-updates?\n\nThe server may publish up to 100 requests per run, regardless of the current dashboard filter.\n\nThis changes files in GitHub. It does not update the live main branch.');
-  if(!confirmed)return;
-  setBusy(true);message('publishMessage','Publishing approved changes to GitHub… Please wait.');
-  try{
-    const {data,error}=await db.functions.invoke('publish-approved-updates',{body:{}});
-    if(error){
-      let detail=errorText(error);
-      if(error.context?.json){try{const payload=await error.context.json();detail=errorText(payload.error||payload.message||payload);}catch{}}
-      throw Error(detail);
-    }
-    if(data?.error)throw Error(errorText(data.error));
-    const files=Array.isArray(data?.files)?data.files:[];
-    const details=files.map(f=>f.file+' ('+f.requests+' requests, '+String(f.commit||'').slice(0,12)+')').join('\n');
-    message('publishMessage',(data?.published||0)+' requests published to '+(data?.branch||'feature/site-updates')+'.'+(details?'\n'+details:'')+(data?.message?'\n'+data.message:''));
-  }catch(err){message('publishMessage','Publishing failed: '+errorText(err),true);}
+    if(approving){
+      try{await publishRequest(r.id);message('dashboardMessage','Approved and published to feature/site-updates.');}
+      catch(err){message('dashboardMessage','Approved, but publishing failed: '+errorText(err)+'. Use Retry publishing on the approved request.',true);}
+    }else message('dashboardMessage','Rejected.');
+  }catch(err){message('dashboardMessage','Decision failed: '+errorText(err),true);}
   finally{setBusy(false);await loadRequests();}
 }
-$('publish').addEventListener('click',publishApproved);
 $('loginForm').addEventListener('submit',async event=>{
   event.preventDefault();const button=$('signIn');button.disabled=true;message('loginMessage','Signing in…');
   try{const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;$('password').value='';message('loginMessage','');await enter(data.session);}
