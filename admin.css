@@ -41,3 +41,29 @@
 .publish-message:empty,.work-section .message:empty{display:none}
 @media(max-width:700px){.shell{padding:18px 12px 40px}.heading{align-items:flex-start}.account{justify-content:flex-start}.stats{gap:8px}.stat{min-height:100px;padding:13px}.stat strong{font-size:29px}.work-section{padding:16px 13px}.publish-panel{padding:16px;align-items:stretch;flex-direction:column;gap:13px}.publish-panel button{width:100%}.work-section .toolbar input{min-width:0}}
 @media(max-width:420px){.stat{padding:11px}.stat .stat-label{font-size:11px}.stat strong{font-size:26px}.stat .stat-caption{font-size:10px}}
+
+/* Compact, accessible request history. Expand only the record being reviewed. */
+.work-section .submissions{gap:7px}
+.submission-compact{padding:0;border-radius:10px;overflow:hidden;box-shadow:none}
+.submission-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;padding:12px 15px;list-style:none;min-height:64px}
+.submission-summary::-webkit-details-marker{display:none}
+.submission-summary:hover{background:#f8fafc}
+.submission-summary:focus-visible{outline:3px solid #83baf0;outline-offset:-3px}
+.submission-heading{min-width:0;flex:1}
+.submission-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.submission-site{font-size:14px;letter-spacing:.01em}
+.submission-carrier,.submission-meta{font-size:11px;color:#687a8e}
+.submission-meta{margin-top:4px;line-height:1.5}
+.submission-summary-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.status-pill{font-size:11px;font-weight:700;border-radius:20px;padding:4px 9px;background:#edf2f8;color:#466078;text-transform:capitalize}
+.status-pending{background:#fff5df;color:#8c6218}.status-approved{background:#e6f5ed;color:#176f50}.status-rejected{background:#fcebec;color:#a33434}
+.publication-note{font-size:10px;color:#8a6a26}.submission-chevron{font-size:18px;color:#738398;transition:transform .2s}
+.submission-compact[open] .submission-chevron{transform:rotate(180deg)}
+.submission-body{border-top:1px solid #e9eef4;padding:12px 15px 15px;background:#fbfcfe}
+.submission-id-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:12px}
+.submission-id{font-size:11px;overflow-wrap:anywhere;color:#455b73}
+.copy-id{padding:5px 9px;min-height:29px;background:#fff;border:1px solid #d5e0eb;color:#235f93;font-size:11px}
+.submission-compact .change-list{gap:9px}
+.submission-compact .change{padding:12px;border-radius:9px}
+.submission-compact .value{padding:8px;min-height:0}
+@media(max-width:550px){.submission-summary{padding:10px 11px}.submission-summary-right{gap:4px}.publication-note{display:none}.submission-body{padding:10px}}

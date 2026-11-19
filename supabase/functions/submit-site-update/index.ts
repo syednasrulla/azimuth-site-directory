@@ -1,3 +1,4 @@
+declare const EdgeRuntime: { waitUntil?: (promise: Promise<unknown>) => void };
 
 import { withSupabase } from "npm:@supabase/server@1";
 
@@ -45,6 +46,63 @@ function validText(value: unknown, min: number, max: number) {
   return typeof value === "string" &&
     value.trim().length >= min &&
     value.trim().length <= max;
+}
+
+// Notification delivery is server-only. No API key or recipient list in public JS.
+// Recipients are derived from the same app_roles.admin table as admin.html.
+async function notifyAdministrators(
+  admin: any,
+  details: { site_code: string; carrier: string; technician_name: string; fields: string[]; submission_id: unknown },
+) {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  const from = Deno.env.get("AZM_NOTIFICATION_FROM");
+  if (!apiKey || !from) {
+    console.warn("Admin email notifications not configured");
+    return;
+  }
+  const { data: roles, error: roleError } = await admin
+    .from("app_roles").select("user_id").eq("role", "admin");
+  if (roleError) throw roleError;
+  const adminIds = new Set((roles || []).map((r: {user_id:string}) => r.user_id));
+  if (!adminIds.size) return;
+  const recipients = new Set<string>();
+  for (let page = 1; page <= 100; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 100 });
+    if (error) throw error;
+    const users = data?.users || [];
+    for (const user of users) {
+      if (adminIds.has(user.id) && user.email && !user.banned_until)
+        recipients.add(user.email);
+    }
+    if (users.length < 100 || recipients.size === adminIds.size) break;
+  }
+  if (!recipients.size) return;
+  const emails = [...recipients];
+  const safe = (v: unknown) => String(v ?? "").replace(/[\r\n]+/g, " ").slice(0, 240);
+  const message = [
+    "A new site improvement request needs review.",
+    "",
+    "Site: " + safe(details.site_code),
+    "Carrier: " + safe(details.carrier),
+    "Submitted by: " + safe(details.technician_name),
+    "Fields: " + details.fields.map(safe).join(", "),
+    "Submission ID: " + safe(details.submission_id),
+    "",
+    "Review: https://syednasrulla.github.io/azimuth-site-directory/admin.html",
+  ].join("\n");
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from,
+      to: [emails[0]],
+      ...(emails.length > 1 ? { bcc: emails.slice(1) } : {}),
+      subject: `AZM Site Directory: new update for ${safe(details.site_code)}`,
+      text: message,
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) throw Error("Email provider returned HTTP " + response.status);
 }
 
 export default {
@@ -320,6 +378,22 @@ export default {
         500,
         origin
       );
+    }
+
+    // Submission succeeded. Email failures must not roll back a saved request.
+    const notification = notifyAdministrators(ctx.supabaseAdmin, {
+      site_code: String(site_code),
+      carrier: String(carrier),
+      technician_name: String(technician_name).trim(),
+      fields: [...new Set(validatedChanges.map((c: any) => String(c.field_name)))],
+      submission_id: data,
+    }).catch((err: unknown) => console.error("Admin notification failed", err));
+    // Keep the Edge Function alive until the notification task finishes.
+    // If waitUntil is unavailable in the runtime, await the task safely.
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
+      EdgeRuntime.waitUntil(notification);
+    } else {
+      await notification;
     }
 
     return respond(

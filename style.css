@@ -459,70 +459,12 @@ html,body{height:100%;overflow:hidden}
 .carrier-badge.carrier-rogers{background:#fff0ee;color:#a3231a;border-color:#f0c5c1}
 .carrier-badge.carrier-telus{background:#edf5ff;color:#235e96;border-color:#c5dbf2}
 
-/* Site update prototype: mobile-first inline proposals. */
-.azm-edit-hidden{display:none!important}
-.azm-edit-panel{background:#fff;border:1px solid #dfe5ed;border-radius:13px;padding:14px;margin-bottom:12px;min-width:0}
-.azm-edit-notice{margin:0 0 14px;color:#526174;font-size:13px}
-.azm-edit-group{border-top:1px solid #e5eaf0;padding-top:12px;margin-top:14px}
-.azm-edit-group h3,.azm-edit-panel h3{font-size:14px;margin:0 0 10px;color:#1d3551}
-.azm-edit-field{border-bottom:1px solid #edf1f5;padding:9px 0}
-.azm-edit-field-label{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:#334155}
-.azm-edit-actions,.azm-edit-footer{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.azm-edit-btn{border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#23435f;min-height:42px;padding:8px 14px;font-size:13px;font-weight:650}
-.azm-edit-btn.primary{background:#175a98;color:#fff;border-color:#175a98}
-.azm-edit-btn.quiet{color:#9b3030}
-.azm-edit-btn:disabled{opacity:.5;cursor:not-allowed}
-.azm-edit-btn:focus-visible,.azm-edit-input:focus-visible,.azm-name-label input:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
-.azm-edit-input,.azm-name-label input{width:100%;box-sizing:border-box;border:1px solid #b9c7d5;border-radius:8px;padding:11px;font:inherit;font-size:16px;color:#1e293b;background:#fff}
-.azm-edit-input{resize:vertical;min-height:80px}
-.azm-field-editor{margin-top:10px}
-.azm-proposed-value{white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f7ff;border-radius:7px;padding:8px;margin-top:6px;font-size:13px}
-.azm-review-item{padding:11px 0;border-bottom:1px solid #e5eaf0;overflow-wrap:anywhere}
-.azm-review-before,.azm-review-after{white-space:pre-wrap;font-size:12px;margin-top:5px}
-.azm-review-before{color:#64748b}.azm-review-after{color:#174e79}
-.azm-name-label{display:block;margin:15px 0 4px;font-size:13px;font-weight:650}
-.azm-name-label input{display:block;margin-top:6px;font-weight:400}
-.azm-prototype-note{font-size:12px;color:#64748b;margin:10px 0 0}
-.azm-edit-launch{margin-left:auto}
-@media(max-width:700px){.azm-edit-panel{padding:12px}.azm-edit-btn{min-height:44px}}
-@media(max-height:440px) and (orientation:landscape){.azm-edit-panel{padding:10px}.azm-edit-field{padding:6px 0}}
+/* Coordinate search button in existing compact search input */
+.search-box{position:relative}.coordinate-search-button{border:0;background:transparent;color:#496782;cursor:pointer;font-size:20px;min-width:32px;min-height:32px;padding:2px 7px;flex-shrink:0;border-radius:4px}.coordinate-search-button:hover{background:#e9f1f8}.coordinate-location{padding:15px}.coordinate-location h2{font-size:17px;margin:0 0 7px}.coordinate-location p{font-size:13px;line-height:1.5;margin:8px 0}
 
-.azm-inline-edit{border-top:1px solid #e5eaf0;padding:8px 14px 12px}
-.site-head .azm-inline-edit{padding:8px 0 0}
-.azm-inline-edit .azm-edit-field-label{font-size:12px;color:#64748b}
-.azm-inline-edit .azm-edit-field{padding:7px 0}
-.azm-inline-edit .azm-edit-btn{min-height:38px}
-@media(max-width:700px){.azm-inline-edit .azm-edit-btn{min-height:44px}}
-
-/* Contextual invitation after all site details, separate from navigation. */
-.azm-improve-section{display:flex;justify-content:flex-end;padding:6px 0 16px;margin-top:4px}
-.azm-improve-section .azm-edit-btn{min-height:44px}
-@media(max-width:480px){.azm-improve-section .azm-edit-btn{width:100%}}
-
-/* Stage 8: true in-place contact editing (no duplicate display rows). */
-.azm-live-address{margin:10px 0}.azm-live-card-body{padding:10px 14px 14px}
-.azm-live-contacts{padding:0 14px}.azm-live-field{padding:10px 0;border-bottom:1px solid #e7ecf2}
-.azm-live-field:last-child{border-bottom:0}.azm-live-label{display:block;font-size:12px;font-weight:650;color:#62748a;margin-bottom:6px}
-.azm-live-input{display:block;width:100%;min-height:64px;resize:vertical;box-sizing:border-box}
-.azm-live-contacts .azm-live-input{min-height:68px}
-.azm-add-contact-row{padding:8px 14px 14px}.azm-live-footer{padding:14px;margin:8px 0 16px;border:1px solid #e1e8f0;border-radius:12px;background:#fff}
-.azm-live-notice{margin:0}.azm-live-footer .azm-edit-footer{justify-content:flex-end}
-.azm-confirm-panel{margin:12px 0}.azm-add-contact{white-space:nowrap}
-@media(max-width:480px){.azm-live-footer .azm-edit-footer .azm-edit-btn{flex:1}}
-
-
-/* Stage 8 contact editor: enforce one normal-flow column, including Add Contact. */
-.contacts-card:has(.azm-live-contacts){display:flow-root;clear:both}
-.azm-live-contacts{display:flex;flex-direction:column;align-items:stretch;min-width:0}
-.azm-live-contacts>.azm-live-field{position:relative;display:block;flex:none;min-width:0;width:100%;clear:both}
-.azm-live-contacts .azm-live-input{display:block;width:100%;max-width:100%;float:none}
-.azm-live-contacts>.azm-add-contact-row{position:static;display:flex;align-items:center;justify-content:flex-start;flex:none;clear:both;width:100%;min-height:60px;margin:0;padding:12px 0 16px;transform:none}
-.azm-add-contact-row>.azm-add-contact{position:static;display:inline-flex;align-items:center;justify-content:center;flex:none;float:none;transform:none;z-index:auto}
-
-/* Step 9F: compact, responsive submission verification and feedback. */
-.azm-turnstile{margin:14px 0 8px;max-width:100%;min-height:65px;overflow:visible}
-.azm-submit-message{margin:7px 0;font-size:12px;line-height:1.5;color:#526174;overflow-wrap:anywhere}
-.azm-submit-message.is-error{color:#a32929}
-.azm-confirm-panel .azm-edit-footer{justify-content:flex-end}
-.azm-confirm-panel .azm-edit-footer button:disabled{opacity:.55}
-@media(max-width:480px){.azm-confirm-panel .azm-edit-footer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.azm-confirm-panel .azm-edit-footer button:last-child{grid-column:1/-1}}
+/* Leaflet-sized, attribution-like layer switch. No floating cards or menus. */
+.azm-layer-toggle{background:#ffffffdf;border-radius:3px;padding:2px 5px;font:11px/1.4 Arial,sans-serif;display:flex;align-items:center;gap:4px;box-shadow:0 1px 3px #0002}
+.azm-layer-toggle button{background:transparent;border:0;color:#17639c;padding:1px 2px;min-height:0;font:inherit;cursor:pointer}
+.azm-layer-toggle button.is-current{color:#333;font-weight:bold;cursor:default}
+.azm-layer-toggle button:disabled{color:#aab0b6;cursor:not-allowed;text-decoration:none}
+.azm-layer-toggle span{color:#8b969e}

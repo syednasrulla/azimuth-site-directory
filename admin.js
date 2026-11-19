@@ -94,19 +94,36 @@ function valueBlock(label,value,proposed=false){
   const v=text('div',value==null||value===''?(proposed?'(removed or empty)':'(empty)'):value,'value'+(proposed?' proposed':''));
   if(value==null||value==='')v.classList.add('empty');box.append(v);return box;
 }
+function copySubmissionId(value,button){
+  const original=button.textContent;
+  navigator.clipboard.writeText(String(value)).then(()=>{
+    button.textContent='Copied';setTimeout(()=>button.textContent=original,1300);
+  }).catch(()=>window.prompt('Copy submission ID',String(value)));
+}
 function render(){
-  const visible=requests;
   const groups=new Map();
-  for(const r of visible){const key=r.submission_id||r.id;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r);}
+  for(const r of requests){const key=r.submission_id||r.id;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r);}
   const root=$('submissions');root.replaceChildren();
   if(!groups.size){root.append(text('div','No matching requests.','empty-state'));return;}
   for(const [submissionId,items] of groups){
-    const first=items[0],section=document.createElement('section');section.className='submission';
-    const header=document.createElement('div');header.className='submission-head';
-    const info=document.createElement('div');info.append(text('h2',first.site_code||'Unknown site'));
-    info.append(text('div',[first.carrier,first.province,'Submitted by '+(first.technician_name||'Unknown'),'Submitted '+date(first.submitted_at)].filter(Boolean).join(' · '),'metadata'));
-    info.append(text('div','Submission '+submissionId,'metadata'));
-    header.append(info,text('span',items.length+' change'+(items.length===1?'':'s'),'chip'));section.append(header);
+    const first=items[0];const section=document.createElement('details');section.className='submission submission-compact';
+    const head=document.createElement('summary');head.className='submission-summary';
+    const main=document.createElement('div');main.className='submission-main';
+    main.append(text('strong',first.site_code||'Unknown site','submission-site'));
+    main.append(text('span',[first.carrier,first.province].filter(Boolean).join(' · '),'submission-carrier'));
+    const sub=text('div',(first.technician_name||'Unknown technician')+' · '+date(first.submitted_at)+' · '+items.length+' change'+(items.length===1?'':'s'),'submission-meta');
+    const heading=document.createElement('div');heading.className='submission-heading';heading.append(main,sub);
+    head.append(heading);
+    const statuses=[...new Set(items.map(i=>i.status))];
+    const status=statuses.length===1?statuses[0]:'Mixed';
+    const right=document.createElement('span');right.className='submission-summary-right';
+    right.append(text('span',status,'status-pill status-'+status.toLowerCase()));
+    if(status==='approved' && items.some(i=>!i.published_at))right.append(text('span','Not published','publication-note'));
+    right.append(text('span','⌄','submission-chevron'));head.append(right);section.append(head);
+    const body=document.createElement('div');body.className='submission-body';
+    const idRow=document.createElement('div');idRow.className='submission-id-row';
+    idRow.append(text('span','Submission ID','metadata'),text('code',submissionId,'submission-id'));
+    const copy=text('button','Copy ID','copy-id');copy.type='button';copy.addEventListener('click',()=>copySubmissionId(submissionId,copy));idRow.append(copy);body.append(idRow);
     const list=document.createElement('div');list.className='change-list';
     for(const r of items){
       const card=document.createElement('article');card.className='change';
@@ -119,14 +136,14 @@ function render(){
           const button=text('button',label,cls);button.type='button';button.disabled=busy;
           button.addEventListener('click',()=>review(r,decision));row.append(button);
         }card.append(row);
-      }else {
-        const note=r.status.charAt(0).toUpperCase()+r.status.slice(1)+' · '+date(r.reviewed_at);
-        card.append(text('p',note,'decision-note'));
-        if(r.published_at)card.append(text('p','Published '+date(r.published_at)+(r.published_commit_sha?' · Commit '+r.published_commit_sha.slice(0,12):''),'decision-note'));
+      }else{
+        card.append(text('p',r.status.charAt(0).toUpperCase()+r.status.slice(1)+' · '+date(r.reviewed_at),'decision-note'));
+        if(r.published_at)card.append(text('p','Published '+date(r.published_at),'decision-note'));
         else if(r.status==='approved')card.append(text('p','Awaiting publication','decision-note'));
       }
       list.append(card);
-    }section.append(list);root.append(section);
+    }
+    body.append(list);section.append(body);root.append(section);
   }
 }
 async function review(r,decision){
