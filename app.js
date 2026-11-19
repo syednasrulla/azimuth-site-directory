@@ -85,14 +85,38 @@ pinButton.addEventListener('click',()=>{isPinned=!isPinned;applyPin()});
 
 const collapseButton=document.getElementById('collapseSidebar');
 const expandButton=document.getElementById('expandSidebar');
+// Familiar close affordance for the Site Explorer, with an accessible, brief hint.
+collapseButton.title='Close Site Explorer';
+collapseButton.setAttribute('aria-label','Close Site Explorer');
+collapseButton.innerHTML='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+collapseButton.style.display='inline-flex';
+collapseButton.style.alignItems='center';
+collapseButton.style.justifyContent='center';
+const explorerToast=document.createElement('div');
+explorerToast.id='explorerReopenHint';
+explorerToast.setAttribute('role','status');
+explorerToast.setAttribute('aria-live','polite');
+explorerToast.textContent='Site Explorer closed. Use the arrow on the map to reopen it.';
+explorerToast.style.cssText='position:fixed;left:50%;bottom:24px;transform:translate(-50%,12px);max-width:min(92vw,420px);box-sizing:border-box;padding:11px 16px;border-radius:10px;background:#172b4d;color:#fff;box-shadow:0 6px 24px #0003;font:500 13px/1.45 system-ui,sans-serif;text-align:center;z-index:10000;pointer-events:none;opacity:0;transition:opacity .18s ease,transform .18s ease;';
+document.body.append(explorerToast);
+let explorerToastTimer;
+function showExplorerReopenHint(){
+  clearTimeout(explorerToastTimer);
+  explorerToast.style.opacity='1';
+  explorerToast.style.transform='translate(-50%,0)';
+  explorerToastTimer=setTimeout(()=>{
+    explorerToast.style.opacity='0';
+    explorerToast.style.transform='translate(-50%,12px)';
+  },2800);
+}
 function setSidebarCollapsed(collapsed){
   workspace.classList.toggle('sidebar-collapsed',collapsed);
   collapseButton.setAttribute('aria-expanded',String(!collapsed));
   expandButton.setAttribute('aria-expanded',String(!collapsed));
   window.setTimeout(()=>map.invalidateSize({pan:false}),260);
 }
-collapseButton.addEventListener('click',()=>setSidebarCollapsed(true));
-expandButton.addEventListener('click',()=>setSidebarCollapsed(false));
+collapseButton.addEventListener('click',()=>{setSidebarCollapsed(true);showExplorerReopenHint();});
+expandButton.addEventListener('click',()=>{setSidebarCollapsed(false);clearTimeout(explorerToastTimer);explorerToast.style.opacity='0';});
 function card(parent,title,value,open=true,extraClass=''){
   if(!clean(value))return;
   const section=document.createElement('details');section.className='detail-card';section.open=open;
@@ -233,21 +257,37 @@ function updateKey(field,index){return field+'::'+(index===null?'field':index)}
 function updateChanges(){
   if(!updateDraft)return;
   updateDraft.changes=new Map();
+  // Contacts are one GeoJSON string, not separate database fields. Build a
+  // single proposal containing the complete resulting string, so approval
+  // stores precisely what the existing site card will display.
+  const contactEntries=updateDraft.entries.filter(e=>e.field==='Useful Contact Info');
   for(const entry of updateDraft.entries){
+    if(entry.field==='Useful Contact Info')continue;
     const value=entry.input.value;
     if(value===entry.original)continue;
-    // Empty new entries do not count as changes.
     if(entry.original==='' && value.trim()==='')continue;
     updateDraft.changes.set(updateKey(entry.field,entry.index),{
       field:entry.field,index:entry.index,oldValue:entry.original,newValue:value,
       action:entry.original===''?'add':value.trim()===''?'remove':'replace'
     });
   }
+  if(contactEntries.length){
+    const original=updateDraft.contactOriginal||'';
+    const parts=contactEntries.map(e=>e.input.value.trim()).filter(Boolean);
+    const separator=updateDraft.contactSeparator||'\n\n';
+    const next=parts.join(separator);
+    if(next!==original){
+      updateDraft.changes.set(updateKey('Useful Contact Info',null),{
+        field:'Useful Contact Info',index:null,oldValue:original,newValue:next,
+        action:!original.trim()?'add':!next?'remove':'replace'
+      });
+    }
+  }
   if(updateDraft.submitButton)updateDraft.submitButton.disabled=updateDraft.changes.size===0;
 }
 function startSiteEdit(){
   if(!selected || !azmSiteUpdatesEnabled)return;
-  updateDraft={site:selected,entries:[],changes:new Map(),review:false,name:'',submitButton:null};
+  updateDraft={site:selected,entries:[],changes:new Map(),review:false,name:'',submitButton:null,contactOriginal:'',contactSeparator:'\n\n'};
   renderUpdateMode();
 }
 function discardSiteEdit(){updateDraft=null;choose(selected)}
@@ -271,7 +311,8 @@ function createEditableField(container,field,original,index=null,labelText=''){
       control.dataset.removing=String(removing);
       control.textContent=removing?'Undo':'Remove';
       control.setAttribute('aria-label',(removing?'Undo removal of ':'Remove ')+(labelText||'contact'));
-      input.value=removing?'':original;
+      if(removing)wrap.dataset.previousValue=input.value;
+      input.value=removing?'':(wrap.dataset.previousValue??original);
       input.disabled=removing;
       wrap.classList.toggle('azm-contact-pending-removal',removing);
       updateChanges();
@@ -355,9 +396,20 @@ function renderUpdateMode(){
   }
   contacts.querySelectorAll(':scope > :not(.section-heading)').forEach(el=>el.remove());
   const contactArea=document.createElement('div');contactArea.className='azm-live-contacts';
-  const lines=String(selected.properties['Useful Contact Info']||'').split(/\r?\n/);
-  lines.forEach((line,index)=>{
-    if(line.trim())createEditableField(contactArea,'Useful Contact Info',line,index,'Contact '+(index+1));
+  // Contact entries are separated by blank lines. Single line breaks belong to
+  // the same contact (for example, a name followed by a telephone number).
+  // Never split an individual contact into independent removal requests.
+  const rawContacts=String(selected.properties['Useful Contact Info']||'');
+  updateDraft.contactOriginal=rawContacts;
+  // Preserve the site's existing formatting. Blank lines delimit contacts
+  // where present. Without delimiters, keep the legacy text together rather
+  // than guessing that each name/phone line is a separate person.
+  updateDraft.contactSeparator=/\r?\n[\t ]*\r?\n/.test(rawContacts)?'\n\n':'\n';
+  const contactEntries=rawContacts.trim()
+    ? rawContacts.trim().split(/\r?\n[\t ]*\r?\n+/).map(value=>value.trim()).filter(Boolean)
+    : [];
+  contactEntries.forEach((entry,index)=>{
+    createEditableField(contactArea,'Useful Contact Info',entry,index,'Contact '+(index+1));
   });
   const add=updateButton('+ Add Contact',()=>addContactField(contactArea,true));add.classList.add('azm-add-contact');
   const addRow=document.createElement('div');addRow.className='azm-add-contact-row';addRow.append(add);
