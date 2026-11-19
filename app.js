@@ -274,8 +274,14 @@ function updateChanges(){
   if(contactEntries.length){
     const original=updateDraft.contactOriginal||'';
     const parts=contactEntries.map(e=>e.input.value.trim()).filter(Boolean);
-    const separator=updateDraft.contactSeparator||'\n\n';
-    const next=parts.join(separator);
+    // Preserve the original contact block byte-for-byte when editing only new entries.
+    // Always separate newly added contacts with a blank line, even for legacy records.
+    const separator='\n\n';
+    const unchangedExisting=contactEntries.filter(e=>!String(e.index).startsWith('new-')).every(e=>e.input.value===e.original);
+    const newParts=contactEntries.filter(e=>String(e.index).startsWith('new-')).map(e=>e.input.value.trim()).filter(Boolean);
+    const next=unchangedExisting && original.trim()
+      ? [original, ...newParts].join(separator)
+      : parts.join(separator);
     if(next!==original){
       updateDraft.changes.set(updateKey('Useful Contact Info',null),{
         field:'Useful Contact Info',index:null,oldValue:original,newValue:next,
