@@ -47,8 +47,6 @@ html,body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans
 .province-option:has(input:not(:checked)){background:#fff;color:#748294}
 .province-option input{width:16px;height:16px;accent-color:#1764a8;margin:0;cursor:pointer}
 .province-option:focus-within{outline:2px solid #7eb8f3;outline-offset:2px}
-.map-count{position:absolute;z-index:450;bottom:22px;right:14px;max-width:min(340px,55vw);background:#ffffffed;border:1px solid #d8e1ec;border-radius:8px;padding:6px 10px;font-size:11px;color:#475467;pointer-events:none;box-shadow:0 1px 5px #0001}
-@media(max-width:700px){.map-count{bottom:8px;right:8px;font-size:10px;max-width:65vw}.province-option{min-height:40px}}
 
 /* Stage 1.9: structure beside site code and improved narrow-screen touch layout */
 .identity-primary{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-bottom:10px}
@@ -468,3 +466,8 @@ html,body{height:100%;overflow:hidden}
 .azm-layer-toggle button.is-current{color:#333;font-weight:bold;cursor:default}
 .azm-layer-toggle button:disabled{color:#aab0b6;cursor:not-allowed;text-decoration:none}
 .azm-layer-toggle span{color:#8b969e}
+
+@media(max-width:700px){.province-option{min-height:40px}}
+
+/* Show search feedback only when there is something actionable to say. */
+#status:empty{display:none}

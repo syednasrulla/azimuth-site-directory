@@ -474,7 +474,7 @@ function choose(s){
   destroyPreview();
   selected=s;const p=s.properties,[lon,lat]=s.geometry.coordinates;
   q.value=idOf(s);results.replaceChildren();matches=[];activeIndex=-1;
-  status.textContent='Selected '+idOf(s)+' — '+clean(p['Site Name']);
+  status.textContent='';
   // Return a previously pinned card before replacing the detail contents.
   pinnedSite.replaceChildren();
   detail.replaceChildren();
@@ -530,10 +530,7 @@ function renderMarkers(){
   }
   if(coordinateAnchor && !nearbyActive){coordinateMarker=L.circleMarker(coordinateAnchor,{radius:9,color:'#d97706',weight:3,fillColor:'#f59e0b',fillOpacity:1}).bindTooltip('Coordinate search centre').addTo(markers);}
   renderNearbyHighlights();
-  const count=document.getElementById('mapCount');
-  if(count)count.textContent=nearbyActive
-    ? `${nearbyFound.length.toLocaleString()} search results`
-    : coordinateAnchor ? 'Coordinate search centre' : selected ? 'Selected site' : 'Search for a site to display markers';
+
 }
 
 function updateActive(){
@@ -556,9 +553,8 @@ function showCoordinateAnchor(){
   updateDraft=null;destroyPreview();selected=null;detail.replaceChildren();pinnedSite.replaceChildren();
   const panel=document.createElement('section');panel.className='detail-card coordinate-location';
   panel.append(textCoordinate('h2','Coordinate location'),textCoordinate('p',formatCoordinates(coordinateAnchor)));
-  const hint=textCoordinate('p','Use Nearby Site Finder → Site radius to find sites around this point.');panel.append(hint);
   detail.append(panel);q.value=formatCoordinates(coordinateAnchor);results.replaceChildren();matches=[];
-  status.textContent='Exploring '+formatCoordinates(coordinateAnchor);
+  status.textContent='';
   applyPin();map.stop();map.flyTo(coordinateAnchor,13,{duration:.6});renderMarkers();updateNearbyReturn();
   if(workspace.classList.contains('sidebar-collapsed'))setSidebarCollapsed(false);
 }
@@ -571,8 +567,8 @@ function search(){
   results.replaceChildren();matches=[];activeIndex=-1;
   const term=fold(q.value),normalized=fold(normalizeId(q.value));
   const coords=parseCoordinates(q.value);
-  if(coords){status.textContent='Coordinates detected · Press Enter or Search to explore this location';return;}
-  if(!term){status.textContent=`${sites.length.toLocaleString()} sites loaded · Search Site ID, name or address`;return}
+  if(coords){status.textContent='';return;}
+  if(!term){status.textContent='';return}
   const scored=[];
   for(const s of sites){if(!provinceEnabled(s))continue;const p=s.properties,id=fold(idOf(s)),name=fold(p['Site Name']),address=fold(p['Site Address']);
     let rank=0;
@@ -585,7 +581,7 @@ function search(){
   }
   scored.sort((a,b)=>b.rank-a.rank||idOf(a.s).localeCompare(idOf(b.s)));
   matches=scored.slice(0,30).map(x=>x.s);
-  status.textContent=scored.length?`${scored.length.toLocaleString()} matching sites${scored.length>30?' · Showing first 30':''}`:'No matching sites';
+  status.textContent=scored.length?'':'No matching sites';
   matches.forEach((s,i)=>{const p=s.properties,b=document.createElement('button');b.type='button';b.className='site-result';
     const name=document.createElement('strong');name.textContent=idOf(s)+' — '+clean(p['Site Name']);b.append(name,carrierBadge(s));
     if(clean(p['Site Address'])){const address=document.createElement('span');address.className='result-address';address.textContent=clean(p['Site Address']);b.append(address)}
