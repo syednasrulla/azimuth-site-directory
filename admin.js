@@ -174,12 +174,12 @@ async function publishRequest(id){
     throw Error(detail);
   }
   if(data?.error)throw Error(errorText(data.error));
-  if(data?.published!==1)throw Error('Publication was not confirmed. Check the request before retrying.');
+  if(data?.queued!==true)throw Error('Publishing was not queued. Check the request before retrying.');
 }
 async function publishOne(r){
   if(busy||!currentUser||r.status!=='approved'||r.published_at)return;
-  setBusy(true);message('dashboardMessage','Publishing '+r.site_code+'…');
-  try{await publishRequest(r.id);message('dashboardMessage','Published to feature/site-updates.');}
+  setBusy(true);message('dashboardMessage','Queueing publication for '+r.site_code+'…');
+  try{await publishRequest(r.id);message('dashboardMessage','Publishing queued. GitHub Actions will update the site data; refresh to check status.');}
   catch(err){message('dashboardMessage','Publishing failed: '+errorText(err),true);}
   finally{setBusy(false);await loadRequests();}
 }
@@ -187,12 +187,12 @@ async function review(r,decision){
   if(busy||!currentUser||r.status!=='pending')return;
   const approving=decision==='approved';
   if(!window.confirm('Are you sure you want to '+(approving?'approve and publish':'reject')+' this change for '+r.site_code+'?\n\n'+r.field_name))return;
-  setBusy(true);message('dashboardMessage',approving?'Approving and publishing…':'Rejecting…');
+  setBusy(true);message('dashboardMessage',approving?'Approving and queueing publication…':'Rejecting…');
   try{
     const {error}=await db.rpc('review_site_update',{p_request_id:r.id,p_decision:decision});
     if(error)throw error;
     if(approving){
-      try{await publishRequest(r.id);message('dashboardMessage','Approved and published to feature/site-updates.');}
+      try{await publishRequest(r.id);message('dashboardMessage','Approved. Publishing queued in GitHub Actions; refresh to check status.');}
       catch(err){message('dashboardMessage','Approved, but publishing failed: '+errorText(err)+'. Use Retry publishing on the approved request.',true);}
     }else message('dashboardMessage','Rejected.');
   }catch(err){message('dashboardMessage','Decision failed: '+errorText(err),true);}
