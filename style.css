@@ -471,3 +471,63 @@ html,body{height:100%;overflow:hidden}
 
 /* Show search feedback only when there is something actionable to say. */
 #status:empty{display:none}
+
+/* Site update prototype: mobile-first inline proposals. */
+.azm-edit-hidden{display:none!important}
+.azm-edit-panel{background:#fff;border:1px solid #dfe5ed;border-radius:13px;padding:14px;margin-bottom:12px;min-width:0}
+.azm-edit-notice{margin:0 0 14px;color:#526174;font-size:13px}
+.azm-edit-group{border-top:1px solid #e5eaf0;padding-top:12px;margin-top:14px}
+.azm-edit-group h3,.azm-edit-panel h3{font-size:14px;margin:0 0 10px;color:#1d3551}
+.azm-edit-field{border-bottom:1px solid #edf1f5;padding:9px 0}
+.azm-edit-field-label{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:#334155}
+.azm-edit-actions,.azm-edit-footer{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.azm-edit-btn{border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#23435f;min-height:42px;padding:8px 14px;font-size:13px;font-weight:650}
+.azm-edit-btn.primary{background:#175a98;color:#fff;border-color:#175a98}
+.azm-edit-btn.quiet{color:#9b3030}
+.azm-edit-btn:disabled{opacity:.5;cursor:not-allowed}
+.azm-edit-btn:focus-visible,.azm-edit-input:focus-visible,.azm-name-label input:focus-visible{outline:3px solid #93c5fd;outline-offset:2px}
+.azm-edit-input,.azm-name-label input{width:100%;box-sizing:border-box;border:1px solid #b9c7d5;border-radius:8px;padding:11px;font:inherit;font-size:16px;color:#1e293b;background:#fff}
+.azm-edit-input{resize:vertical;min-height:80px}
+.azm-field-editor{margin-top:10px}
+.azm-proposed-value{white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f7ff;border-radius:7px;padding:8px;margin-top:6px;font-size:13px}
+.azm-review-item{padding:11px 0;border-bottom:1px solid #e5eaf0;overflow-wrap:anywhere}
+.azm-review-before,.azm-review-after{white-space:pre-wrap;font-size:12px;margin-top:5px}
+.azm-review-before{color:#64748b}.azm-review-after{color:#174e79}
+.azm-name-label{display:block;margin:15px 0 4px;font-size:13px;font-weight:650}
+.azm-name-label input{display:block;margin-top:6px;font-weight:400}
+.azm-prototype-note{font-size:12px;color:#64748b;margin:10px 0 0}
+.azm-edit-launch{margin-left:auto}
+@media(max-width:700px){.azm-edit-panel{padding:12px}.azm-edit-btn{min-height:44px}}
+@media(max-height:440px) and (orientation:landscape){.azm-edit-panel{padding:10px}.azm-edit-field{padding:6px 0}}
+
+.azm-inline-edit{border-top:1px solid #e5eaf0;padding:8px 14px 12px}
+.site-head .azm-inline-edit{padding:8px 0 0}
+.azm-inline-edit .azm-edit-field-label{font-size:12px;color:#64748b}
+.azm-inline-edit .azm-edit-field{padding:7px 0}
+.azm-inline-edit .azm-edit-btn{min-height:38px}
+@media(max-width:700px){.azm-inline-edit .azm-edit-btn{min-height:44px}}
+
+/* Contextual invitation after all site details, separate from navigation. */
+.azm-improve-section{display:flex;justify-content:flex-end;padding:6px 0 16px;margin-top:4px}
+.azm-improve-section .azm-edit-btn{min-height:44px}
+@media(max-width:480px){.azm-improve-section .azm-edit-btn{width:100%}}
+
+/* Stage 8: true in-place contact editing (no duplicate display rows). */
+.azm-live-address{margin:10px 0}.azm-live-card-body{padding:10px 14px 14px}
+.azm-live-contacts{padding:0 14px}.azm-live-field{padding:10px 0;border-bottom:1px solid #e7ecf2}
+.azm-live-field:last-child{border-bottom:0}.azm-live-label{display:block;font-size:12px;font-weight:650;color:#62748a;margin-bottom:6px}
+.azm-live-input{display:block;width:100%;min-height:64px;resize:vertical;box-sizing:border-box}
+.azm-live-contacts .azm-live-input{min-height:68px}
+.azm-add-contact-row{padding:8px 14px 14px}.azm-live-footer{padding:14px;margin:8px 0 16px;border:1px solid #e1e8f0;border-radius:12px;background:#fff}
+.azm-live-notice{margin:0}.azm-live-footer .azm-edit-footer{justify-content:flex-end}
+.azm-confirm-panel{margin:12px 0}.azm-add-contact{white-space:nowrap}
+@media(max-width:480px){.azm-live-footer .azm-edit-footer .azm-edit-btn{flex:1}}
+
+
+/* Stage 8 contact editor: enforce one normal-flow column, including Add Contact. */
+.contacts-card:has(.azm-live-contacts){display:flow-root;clear:both}
+.azm-live-contacts{display:flex;flex-direction:column;align-items:stretch;min-width:0}
+.azm-live-contacts>.azm-live-field{position:relative;display:block;flex:none;min-width:0;width:100%;clear:both}
+.azm-live-contacts .azm-live-input{display:block;width:100%;max-width:100%;float:none}
+.azm-live-contacts>.azm-add-contact-row{position:static;display:flex;align-items:center;justify-content:flex-start;flex:none;clear:both;width:100%;min-height:60px;margin:0;padding:12px 0 16px;transform:none}
+.azm-add-contact-row>.azm-add-contact{position:static;display:inline-flex;align-items:center;justify-content:center;flex:none;float:none;transform:none;z-index:auto}
