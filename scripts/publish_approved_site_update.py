@@ -33,7 +33,7 @@ def git(*args):
 
 def rest(method, table, query='', payload=None):
     url = f'{BASE}/rest/v1/{table}{query}'
-    headers = {'apikey': KEY, 'Authorization': f'Bearer {KEY}', 'Accept': 'application/json'}
+    headers = {'apikey': KEY, 'Accept': 'application/json'}
     if payload is not None:
         headers['Content-Type'] = 'application/json'
         headers['Prefer'] = 'return=representation'
