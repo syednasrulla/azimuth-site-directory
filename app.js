@@ -783,6 +783,32 @@ const nearbyStatus=document.getElementById('nearbyStatus');
 const nearbyResults=document.getElementById('nearbyResults');
 const nearbyPlace=document.getElementById('nearbyPlace');
 const nearbyPlaceRow=document.getElementById('nearbyPlaceRow');
+// Fixed office origin: one-tap route to the currently selected site.
+// Reuse the existing From Town routing and corridor search; no new routing API.
+const HOME_ORIGIN=Object.freeze({lat:49.21893260057106,lon:-122.97955062711837});
+const nearbyPlaceLabel=nearbyPlaceRow.querySelector('label[for="nearbyPlace"]');
+const nearbyHomeHeader=document.createElement('div');
+nearbyHomeHeader.className='nearby-home-header';
+nearbyPlaceLabel.before(nearbyHomeHeader);
+nearbyHomeHeader.append(nearbyPlaceLabel);
+const nearbyHomeButton=document.createElement('button');
+nearbyHomeButton.type='button';
+nearbyHomeButton.className='nearby-home-button';
+nearbyHomeButton.title='Show the route from the AZM West office to the selected site, including other sites along the way.';
+nearbyHomeButton.setAttribute('aria-label','Show the route from the AZM West office to the selected site, including other sites along the way');
+nearbyHomeButton.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="2"/><path d="M9 19h7a4 4 0 0 0 0-8h-8a4 4 0 0 1 0-8h7"/><path d="m13 1 3 2-3 2"/></svg><span>From Base</span>';
+nearbyHomeHeader.append(nearbyHomeButton);
+const nearbyHomeStyle=document.createElement('style');
+nearbyHomeStyle.textContent=`
+.nearby-home-header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;margin-bottom:5px}
+.nearby-home-header label{margin:0;min-width:0}
+.nearby-home-button{display:inline-flex;align-items:center;justify-content:center;gap:4px;flex:0 0 auto;padding:4px 7px;border:1px solid transparent;border-radius:6px;background:transparent;color:#2465a0;font:inherit;font-size:12px;font-weight:600;line-height:1.3;cursor:pointer;min-height:36px}
+.nearby-home-button:hover{background:#edf4fc;border-color:#d4e4f5}
+.nearby-home-button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.nearby-home-button:disabled{opacity:.5;cursor:wait}
+@media (pointer:coarse){.nearby-home-button{min-height:44px;min-width:44px;padding:9px 10px}}
+`;
+document.head.append(nearbyHomeStyle);
 const nearbyRouteRadius=document.getElementById('nearbyRouteRadius');
 const nearbyRouteRadiusValue=document.getElementById('nearbyRouteRadiusValue');
 const nearbySuggestions=document.getElementById('nearbySuggestions');
@@ -1046,6 +1072,22 @@ nearbyPlace.addEventListener('keydown',event=>{
 nearbySuggestions.addEventListener('keydown',event=>{if(event.key==='Escape'){hideTownSuggestions();nearbyPlace.focus()}});
 document.addEventListener('pointerdown',event=>{if(!nearbyPlaceRow.contains(event.target))hideTownSuggestions()});
 
+nearbyHomeButton.addEventListener('click',async()=>{
+ if(nearbyMode!=='settlement')return;
+ if(!selected||coordinateAnchor){
+  nearbyStatus.textContent='Select a destination site first.';
+  return;
+ }
+ clearTimeout(townTimer);
+ townAbort?.abort();
+ townSequence++;
+ hideTownSuggestions();
+ townSuggestion={query:'Home',label:'Main location',...HOME_ORIGIN};
+ nearbyPlace.value='Home';
+ nearbyPlace.blur();
+ nearbyHomeButton.disabled=true;
+ try{await runNearbySearch()}finally{nearbyHomeButton.disabled=false}
+});
 nearbyModeButtons.forEach(button=>button.addEventListener('click',()=>setNearbyMode(button.dataset.nearbyMode)));
 document.getElementById('nearbyFind').addEventListener('click',()=>{nearbyPlace.blur();runNearbySearch()});
 document.getElementById('nearbyClear').addEventListener('click',()=>clearNearby());
