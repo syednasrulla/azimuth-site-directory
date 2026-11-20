@@ -29,7 +29,13 @@ function showSiteName(target,request){
 }
 
 let searchDelay;
-function setBusy(value){busy=value; $('refresh').disabled=value; $('previousPage').disabled=value || page===0; $('nextPage').disabled=value || (page+1)*PAGE_SIZE>=totalMatching; document.querySelectorAll('.decision-row button').forEach(b=>b.disabled=value);}
+function setBusy(value){
+  busy=value;
+  $('refresh').disabled=value;
+  $('previousPage').disabled=value || page===0;
+  $('nextPage').disabled=value || (page+1)*PAGE_SIZE>=totalMatching;
+  document.querySelectorAll('.decision-row button, .change button.copy-id').forEach(b=>b.disabled=value);
+}
 async function checkAdmin(user){
   const {data,error}=await db.from('app_roles').select('role').eq('user_id',user.id).eq('role','admin').maybeSingle();
   if(error)throw Error('Unable to verify administrator permissions: '+error.message);
