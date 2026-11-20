@@ -12,7 +12,23 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-BASE = os.environ['SUPABASE_URL'].rstrip('/')
+def normalize_supabase_base(raw):
+    """Accept a Supabase project URL, optionally ending in /rest/v1."""
+    value = raw.strip().rstrip('/')
+    parsed = urllib.parse.urlsplit(value)
+    if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise ValueError('SUPABASE_URL must be an HTTPS Supabase project URL without query parameters')
+    if not parsed.hostname.endswith('.supabase.co'):
+        raise ValueError('SUPABASE_URL must be the project URL (https://<project-ref>.supabase.co), not the dashboard URL')
+    path = parsed.path.rstrip('/')
+    if path == '/rest/v1':
+        path = ''
+    if path:
+        raise ValueError('SUPABASE_URL must not contain a path other than an optional /rest/v1 suffix')
+    return urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, '', '', ''))
+
+
+BASE = normalize_supabase_base(os.environ['SUPABASE_URL'])
 KEY = os.environ['SUPABASE_SERVICE_ROLE_KEY']
 REQUEST_ID = os.environ['REQUEST_ID']
 BRANCH = 'feature/site-updates'
@@ -43,7 +59,7 @@ def rest(method, table, query='', payload=None):
         with urllib.request.urlopen(req, timeout=30) as response:
             return json.loads(response.read() or b'null')
     except urllib.error.HTTPError as exc:
-        raise RuntimeError(f'Supabase HTTP {exc.code}: {exc.read(500).decode(errors="replace")}') from exc
+        raise RuntimeError(f'Supabase HTTP {exc.code} on {method} /rest/v1/{table}: {exc.read(500).decode(errors="replace")}') from exc
 
 
 def load_request():
