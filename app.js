@@ -257,12 +257,20 @@ function updateKey(field,index){return field+'::'+(index===null?'field':index)}
 function updateChanges(){
   if(!updateDraft)return;
   updateDraft.changes=new Map();
-  // Contacts are one GeoJSON string, not separate database fields. Build a
-  // single proposal containing the complete resulting string, so approval
-  // stores precisely what the existing site card will display.
-  const contactEntries=updateDraft.entries.filter(e=>e.field==='Useful Contact Info');
+  // Each contact textarea creates its own review request. Preserve legacy
+  // contact blocks as-is; do not guess where a person begins or ends.
   for(const entry of updateDraft.entries){
-    if(entry.field==='Useful Contact Info')continue;
+    if(entry.field==='Useful Contact Info'){
+      const value=entry.input.value;
+      const original=entry.original;
+      if(value===original)continue;
+      if(!original.trim() && !value.trim())continue;
+      updateDraft.changes.set(updateKey(entry.field,entry.index),{
+        field:entry.field,index:entry.index,oldValue:original,newValue:value,
+        action:!original.trim()?'add':!value.trim()?'remove':'replace'
+      });
+      continue;
+    }
     const value=entry.input.value;
     if(value===entry.original)continue;
     if(entry.original==='' && value.trim()==='')continue;
@@ -270,24 +278,6 @@ function updateChanges(){
       field:entry.field,index:entry.index,oldValue:entry.original,newValue:value,
       action:entry.original===''?'add':value.trim()===''?'remove':'replace'
     });
-  }
-  if(contactEntries.length){
-    const original=updateDraft.contactOriginal||'';
-    const parts=contactEntries.map(e=>e.input.value.trim()).filter(Boolean);
-    // Preserve the original contact block byte-for-byte when editing only new entries.
-    // Always separate newly added contacts with a blank line, even for legacy records.
-    const separator='\n\n';
-    const unchangedExisting=contactEntries.filter(e=>!String(e.index).startsWith('new-')).every(e=>e.input.value===e.original);
-    const newParts=contactEntries.filter(e=>String(e.index).startsWith('new-')).map(e=>e.input.value.trim()).filter(Boolean);
-    const next=unchangedExisting && original.trim()
-      ? [original, ...newParts].join(separator)
-      : parts.join(separator);
-    if(next!==original){
-      updateDraft.changes.set(updateKey('Useful Contact Info',null),{
-        field:'Useful Contact Info',index:null,oldValue:original,newValue:next,
-        action:!original.trim()?'add':!next?'remove':'replace'
-      });
-    }
   }
   if(updateDraft.submitButton)updateDraft.submitButton.disabled=updateDraft.changes.size===0;
 }
@@ -446,7 +436,7 @@ function renderUpdateConfirmation(header,notice){
   const heading=document.createElement('h3');heading.textContent='Confirm changes';panel.append(heading,notice.cloneNode(true));
   for(const change of changes){
     const item=document.createElement('div');item.className='azm-review-item';
-    const title=document.createElement('strong');title.textContent=change.field;item.append(title);
+    const title=document.createElement('strong');title.textContent=change.field==='Useful Contact Info' ? (change.action==='add'?'Add contact':change.action==='remove'?'Remove contact':'Edit contact') : change.field;item.append(title);
     const before=document.createElement('div');before.className='azm-review-before';before.textContent='Before: '+(change.oldValue||'(empty)');
     const after=document.createElement('div');after.className='azm-review-after';after.textContent='After: '+(change.newValue.trim()||'(removed)');
     item.append(before,after);panel.append(item);

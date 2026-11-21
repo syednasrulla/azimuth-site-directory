@@ -90,6 +90,58 @@ def update_description(props, field):
     props['description'] = (desc[:content_start] + '\n\n' + value + '\n\n' + desc[end:].lstrip()).rstrip()
 
 
+def change_contact_line(current, action, original, proposed):
+    """Change exactly one blank-line-delimited contact block, never a substring.
+
+    Legacy content without blank-line delimiters remains one block. Existing
+    formatting is preserved outside the selected block.
+    """
+    import re
+
+    def blocks(text):
+        # Retain original byte offsets so unrelated contact text is untouched.
+        return [(m.start(), m.end(), m.group()) for m in
+                re.finditer(r'[^\r\n](?:[^\r\n]|\r?\n(?![ \t]*\r?\n))*', text)]
+
+    if action == 'add':
+        if proposed is None or not str(proposed).strip():
+            raise ValueError('Invalid contact addition')
+        new = str(proposed).strip()
+        if any(block.strip() == new for _, _, block in blocks(current)):
+            raise ValueError('Contact already exists; review required')
+        if not current.strip():
+            return new
+        return current.rstrip('\r\n') + '\n\n' + new
+
+    if original is None or not str(original).strip():
+        raise ValueError('Missing original contact')
+    old = str(original).strip()
+    matches = [(start, end) for start, end, block in blocks(current)
+               if block.strip() == old]
+    if len(matches) != 1:
+        raise ValueError('Stale or ambiguous contact: expected exactly one matching contact block')
+    start, end = matches[0]
+    if action == 'replace':
+        if proposed is None or not str(proposed).strip():
+            raise ValueError('Invalid contact replacement')
+        new = str(proposed).strip()
+        if new == old:
+            raise ValueError('No effective change')
+        if any(block.strip() == new for _, _, block in blocks(current)):
+            raise ValueError('Replacement contact already exists')
+        return current[:start] + new + current[end:]
+    if action == 'remove':
+        # Remove adjacent blank separator, not another contact's content.
+        after = current[end:]
+        before = current[:start]
+        if after.strip():
+            after = re.sub(r'^(?:[ \t]*\r?\n)+', '', after)
+            return before + after
+        before = re.sub(r'(?:\r?\n[ \t]*)+$', '', before)
+        return before
+    raise ValueError('Unsupported contact action')
+
+
 def apply(props, row):
     field, action = row['field_name'], row['action']
     if field not in FIELDS or action not in {'add', 'replace', 'remove'}:
@@ -97,7 +149,9 @@ def apply(props, row):
     current = str(props.get(field) or '')
     original = row['original_value']
     proposed = row['proposed_value']
-    if action == 'replace':
+    if field == 'Useful Contact Info':
+        next_value = change_contact_line(current, action, original, proposed)
+    elif action == 'replace':
         if original is None or proposed is None or not str(proposed).strip():
             raise ValueError('Invalid replacement')
         if current != str(original):
@@ -112,15 +166,9 @@ def apply(props, row):
     else:
         if original is None or not str(original).strip():
             raise ValueError('Invalid removal')
-        if field == 'Useful Contact Info' and current != str(original):
-            blocks = [b.strip() for b in re.split(r'\r?\n[ \t]*\r?\n+', current) if b.strip()]
-            if blocks.count(str(original).strip()) != 1:
-                raise ValueError('Stale or ambiguous contact removal')
-            next_value = '\n\n'.join(b for b in blocks if b != str(original).strip())
-        else:
-            if current != str(original):
-                raise ValueError('Stale removal: field differs from original snapshot')
-            next_value = ''
+        if current != str(original):
+            raise ValueError('Stale removal: field differs from original snapshot')
+        next_value = ''
     if current == next_value:
         raise ValueError('No effective change; review required')
     props[field] = next_value
